@@ -26,6 +26,15 @@
         "-y",
         "next-devtools-mcp@0.4.0"
       ]
+    },
+    "ElevenLabs": {
+      "command": "uvx",
+      "args": [
+        "elevenlabs-mcp==0.12.2"
+      ],
+      "env": {
+        "ELEVENLABS_API_KEY": "${ELEVENLABS_API_KEY}"
+      }
     }
   }
 }

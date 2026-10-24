@@ -124,6 +124,23 @@ The detector only knows common objects, so it cannot count snack bars or a parti
 can: for those, the vision model stays the source of the count. With no sidecar running
 the app behaves as before.
 
+## MCP servers for a coding agent (optional)
+
+`.mcp.json` lists the servers a coding agent (Claude Code, Cursor) can use here:
+FalkorDB, Next.js devtools, Qodo and ElevenLabs. The app does not need them.
+
+- **Node (`npx`)** runs the FalkorDB and Next.js servers. **`uv` (`uvx`)** runs the ElevenLabs
+  server: install it with `brew install uv` (or see https://docs.astral.sh/uv/) and check it
+  with `uvx --version`.
+- The Qodo and ElevenLabs entries read `QODO_API_KEY` and `ELEVENLABS_API_KEY` from the
+  environment of the agent, not from `.env.local`. Export them in the shell you start the
+  agent from, then restart it:
+
+```bash
+set -a; source .env.local; set +a   # exports every key in .env.local
+claude                               # or open your editor from this shell
+```
+
 ## What you can ask
 
 - "How many eggs are left?"
