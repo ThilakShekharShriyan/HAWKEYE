@@ -94,4 +94,16 @@ describe("house graph", () => {
     expect(nodes.some((n) => n.id === "item:thing 1")).toBe(false);
     expect(nodes.some((n) => n.id === "site:container:cap-105")).toBe(true);
   });
+
+  it("links a camera place to every phone that watched it: a shared place shows both roommates", async () => {
+    const now = new Date();
+    await store.createPlace({ key: "container:stage table", kind: "container", name: "stage table", catalogued: true, description: "", items: [{ name: "water bottle", count: 2, since: now, by: "01" }], lastSeen: new Date(Date.now() + 60_000), lastObserver: "01" });
+    await store.patchPlace("container:stage table", { lastObserver: "02", items: [{ name: "water bottle", count: 1, since: now, by: "02" }] });
+    const { links } = await mod.readHouseGraph();
+    const watchers = links.filter((l) => l.type === "WATCHES" && l.target === "site:container:stage table").map((l) => l.source).sort();
+    expect(watchers).toEqual(["observer:01", "observer:02"]);
+    // and each phone is carried by a roommate, so the path person -> phone -> place exists for both
+    expect(links.some((l) => l.type === "CARRIES" && l.source === "person:thilak" && l.target === "observer:01")).toBe(true);
+    expect(links.some((l) => l.type === "CARRIES" && l.source === "person:arnav" && l.target === "observer:02")).toBe(true);
+  });
 });

@@ -19,7 +19,8 @@
     "tracker:setup": "uv venv tracker/.venv --python 3.12 && VIRTUAL_ENV=tracker/.venv uv pip install trackers rfdetr fastapi \"uvicorn[standard]\" opencv-python-headless numpy httpx",
     "tracker:dev": "cd tracker && ${TRACKER_PYTHON_BIN:-.venv/bin}/uvicorn server:app --port ${TRACKER_PORT:-8766}",
     "tracker:verify": "cd tracker && ${TRACKER_PYTHON_BIN:-.venv/bin}/python verify.py",
-    "demo:videos": "sh scripts/demo-videos.sh"
+    "demo:videos": "sh scripts/demo-videos.sh",
+    "demo:reset": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/vite-node/vite-node.mjs --config vitest.config.ts scripts/demo-reset.ts"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.27.0",
