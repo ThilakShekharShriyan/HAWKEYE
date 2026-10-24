@@ -82,6 +82,30 @@ Ask: `curl -X POST localhost:3100/api/ask -H 'content-type: application/json' -d
 Each question opens a TrueForge session, so it shows up in the harness UI.
 
 
+## Live tracking (optional)
+
+A small Python sidecar (`tracker/server.py`, RF-DETR detection and ByteTrack from
+roboflow/trackers) follows people and portable things (bottles, cups, laptops,
+bags) in each phone's feed at a few frames a second, with stable IDs and trails.
+The dashboard draws the boxes over the camera feed.
+
+When the tracker sees a hand reach in and leave, and the count of an object the hand
+touched has changed, HAWKEYE writes the new count to FalkorDB straight away (about a
+second) instead of waiting for the vision model: the place document and its
+`HOLDS {count}` link, plus a "Taken" or "Added" event. The slower model episode runs
+afterwards and corrects anything this got wrong. Both take the same write lock, so a
+bottle leaving is recorded once.
+
+```bash
+npm run tracker:setup      # one time: Python 3.12 venv with rfdetr and trackers
+npm run tracker:dev        # sidecar on :8766 (TRACKER_PORT to change)
+# in .env.local: TRACKER_URL=http://localhost:8766 and TRACKER_LIVE=1
+```
+
+The detector only knows common objects, so it cannot count snack bars or a particular
+can: for those, the vision model stays the source of the count. With no sidecar running
+the app behaves as before.
+
 ## What you can ask
 
 - "How many eggs are left?"

@@ -132,7 +132,7 @@ export type EpisodeResult = {
 
 const containerKey = (name: string) => `container:${normName(name)}`;
 
-function describe(site: Pick<ContainerDoc, "name" | "place" | "items" | "catalogued">) {
+export function describe(site: Pick<ContainerDoc, "name" | "place" | "items" | "catalogued">) {
   const where = site.place ? ` in the ${site.place}` : "";
   if (site.catalogued === false) return `The ${site.name}${where}; contents not seen yet.`;
   return `The ${site.name}${where} holds: ${formatItems(site.items)}.`;
@@ -222,7 +222,7 @@ function candidateParts(candidates: ContainerDoc[], refs?: number[]) {
 const lockStore = globalThis as typeof globalThis & { __worldstateWriteLock?: Promise<void> };
 
 /** Resolves when earlier episodes have finished writing; call the result to let the next one in. */
-async function acquireWriteLock() {
+export async function acquireWriteLock() {
   const previous = lockStore.__worldstateWriteLock ?? Promise.resolve();
   let release = () => {};
   lockStore.__worldstateWriteLock = new Promise<void>((resolve) => {
