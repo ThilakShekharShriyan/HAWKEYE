@@ -72,7 +72,7 @@ changed, and a page for each checkpoint with its history.
 npm run db:up              # FalkorDB on :6390, browser on :3010
 npm run seed:demo          # a shared house: fridge and snack shelf, who took what
 npm run trueforge          # TrueForge harness, UI on :8790 (separate terminal)
-npm run mcp:falkor         # FalkorDB MCP over HTTP on :3005 (separate terminal)
+npm run mcp:falkor         # FalkorDB MCP over HTTP on :3006 (separate terminal)
 npm run trueforge:setup    # registers the OpenAI model, the MCP server and the agent
 # in .env.local: OPENAI_API_KEY, OPENAI_MODEL=gpt-5.5, TRUEFORGE_AGENT=1
 npx next dev -p 3100
@@ -81,6 +81,25 @@ npx next dev -p 3100
 Ask: `curl -X POST localhost:3100/api/ask -H 'content-type: application/json' -d '{"observerId":"01","text":"Hey World, who took the last coke?"}'`.
 Each question opens a TrueForge session, so it shows up in the harness UI.
 
+
+## The house in 3D
+
+`npm run seed:demo` builds the demo house in FalkorDB, and `/house` draws it with
+[3d-force-graph](https://github.com/vasturiano/3d-force-graph). Open
+`http://localhost:3100/house` (or your dev port), drag to orbit, click a node.
+
+```
+(Person)-[:LIVES_IN]->(House)-[:HAS_AREA]->(Area)-[:HAS_SITE]->(Place)-[:HOLDS {count}]->(Item)
+(Person)-[:ROOMMATE_OF]->(Person)
+(Person)-[:RESPONSIBLE_FOR]->(Duty)-[:COVERS]->(Area)
+(Person)-[:CARRIES]->(Observer)
+```
+
+Two roommates, Thilak and Arnav, share three areas: Kitchen (fridge, dishwasher,
+microwave, oven), Laundry (dishpods, lint roller, stain removers and boosters)
+and Household (bleach spray, bounty). The sites are the same `Place` nodes the
+cameras update, so a sighting changes what you see. The data lives in
+`lib/house-graph.ts`; the counts are sample data. The page refreshes every 5 seconds.
 
 ## What you can ask
 
