@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@falkordb/mcpserver@latest"
+        "@falkordb/mcpserver@1.3.0"
       ],
       "env": {
         "FALKORDB_HOST": "localhost",
@@ -19,6 +19,13 @@
       "headers": {
         "Authorization": "Bearer ${QODO_API_KEY}"
       }
+    },
+    "next-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "next-devtools-mcp@0.4.0"
+      ]
     }
   }
 }

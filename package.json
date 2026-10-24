@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "trueforge": "OUTBOUND_URL_ALLOWED_HOSTS='[\"localhost\"]' npx @truefoundry/trueforge@latest",
-    "mcp:falkor": "MCP_TRANSPORT=http MCP_PORT=${FALKORDB_MCP_PORT:-3005} FALKORDB_HOST=${FALKORDB_HOST:-localhost} FALKORDB_PORT=${FALKORDB_PORT:-6390} FALKORDB_DEFAULT_READONLY=true npx -y @falkordb/mcpserver@latest",
+    "mcp:falkor": "MCP_TRANSPORT=http MCP_PORT=${FALKORDB_MCP_PORT:-3005} FALKORDB_HOST=${FALKORDB_HOST:-localhost} FALKORDB_PORT=${FALKORDB_PORT:-6390} FALKORDB_DEFAULT_READONLY=true npx -y @falkordb/mcpserver@1.3.0",
     "trueforge:setup": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/trueforge-setup.ts"
   },
   "dependencies": {
@@ -21,7 +21,7 @@
     "@mediapipe/tasks-vision": "^1.1.0",
     "@truefoundry/trueforge-sdk": "^0.179.0",
     "falkordb": "^6.9.2",
-    "next": "16.4.0",
+    "next": "^16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -31,7 +31,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.0",
+    "eslint-config-next": "^16.4.3",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.7"
