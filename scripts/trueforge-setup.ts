@@ -6,10 +6,10 @@ import {
 } from "../lib/trueforge-agent.ts";
 
 const baseUrl = (process.env.TRUEFORGE_BASE_URL ?? "http://localhost:8790").replace(/\/$/, "");
-const modelId = process.env.OPENAI_MODEL ?? "gpt-5.4-mini";
+const modelId = process.env.OPENAI_MODEL ?? "gpt-5.5";
 const modelName = modelId.replace(/\./g, "-");
 const mcpUrl = process.env.FALKORDB_MCP_URL ?? "http://localhost:3005";
-const skillUrl = process.env.TRUEFORGE_SKILL_URL ?? "https://github.com/arnxv0/worldstate-mongodb";
+const skillUrl = process.env.TRUEFORGE_SKILL_URL ?? "https://github.com/ThilakShekharShriyan/HAWKEYE";
 const skillRef = process.env.TRUEFORGE_SKILL_REF ?? "main";
 
 function safe(error: unknown) {

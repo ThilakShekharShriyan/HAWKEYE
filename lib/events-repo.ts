@@ -101,11 +101,13 @@ export async function insertEvent(input: {
   location?: string[];
   metadata?: EventMetadata;
   summary?: string;
+  /** Defaults to now; the demo seed backdates events. */
+  ts?: Date;
 }) {
   const doc: EventDoc = {
     ...input,
     id: newId("evt"),
-    ts: new Date(),
+    ts: input.ts ?? new Date(),
     summary: input.summary ?? input.message ?? input.title,
   };
   const names = namesOf(doc.location, doc.metadata);

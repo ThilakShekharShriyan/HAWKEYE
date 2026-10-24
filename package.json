@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:up": "docker compose up -d falkordb",
     "db:setup": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/setup-graph.ts",
+    "seed:demo": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/vite-node/vite-node.mjs --config vitest.config.ts scripts/seed-demo.ts",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
