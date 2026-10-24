@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "falkordb": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@falkordb/mcpserver@latest"
+      ],
+      "env": {
+        "FALKORDB_HOST": "localhost",
+        "FALKORDB_PORT": "6390",
+        "FALKORDB_DEFAULT_READONLY": "false",
+        "MCP_TRANSPORT": "stdio"
+      }
+    },
+    "qodo-managed-tools": {
+      "type": "http",
+      "url": "https://sdk.qodo.ai/v1/tools/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${QODO_API_KEY}"
+      }
+    }
+  }
+}

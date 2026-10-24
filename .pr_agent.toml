@@ -1,0 +1,10 @@
+[pr_reviewer]
+extra_instructions = """
+Review this as a Patch the Conference hackathon repo (HAWKEYE: roommate and room tracking).
+Check FalkorDB Cypher for injection (parameters, not string-built names), that answers stay traceable to a graph path, and that Bright Data and TrueForge failures fall back instead of breaking the demo.
+Flag logic bugs in place counts, who-took-it, and delete-place. Ignore style nits.
+"""
+persistent_comment = false
+
+[pr_reviewer.inline_comments]
+extra_instructions = "Comment only on bugs, broken graph queries, or missing fallbacks."
