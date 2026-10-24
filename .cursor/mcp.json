@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "falkordb": {
+      "command": "npx",
+      "args": ["-y", "@falkordb/mcpserver@latest"],
+      "env": {
+        "FALKORDB_HOST": "localhost",
+        "FALKORDB_PORT": "6390",
+        "FALKORDB_DEFAULT_READONLY": "false",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}

@@ -1,26 +1,39 @@
 {
   "name": "hawkeye",
-  "version": "1.0.0",
-  "description": "Conference intelligence agent on a FalkorDB graph",
-  "main": "index.js",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "up": "docker compose up -d",
-    "seed": "tsx src/cli.ts seed",
-    "hawkeye": "tsx src/cli.ts",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:up": "docker compose up -d falkordb",
+    "db:setup": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/setup-graph.ts",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "typecheck": "tsc"
+    "test:watch": "vitest",
+    "trueforge": "OUTBOUND_URL_ALLOWED_HOSTS='[\"localhost\"]' npx @truefoundry/trueforge@latest",
+    "mcp:falkor": "MCP_TRANSPORT=http MCP_PORT=${FALKORDB_MCP_PORT:-3005} FALKORDB_HOST=${FALKORDB_HOST:-localhost} FALKORDB_PORT=${FALKORDB_PORT:-6390} FALKORDB_DEFAULT_READONLY=true npx -y @falkordb/mcpserver@latest",
+    "trueforge:setup": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/trueforge-setup.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
   "dependencies": {
-    "falkordb": "^6.9.2"
+    "@elevenlabs/client": "^1.27.0",
+    "@mediapipe/tasks-vision": "^1.1.0",
+    "@truefoundry/trueforge-sdk": "^0.179.0",
+    "falkordb": "^6.9.2",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2",
-    "vitest": "^5.0.5"
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
