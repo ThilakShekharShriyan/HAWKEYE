@@ -437,6 +437,9 @@ async function perceive({
   const changes: string[] = [];
   let identity: "known" | "new" | undefined;
   let pictured: { name: string; count: number }[] | null = null;
+  // False when the picture is a partial view catalogued by an explicit registration:
+  // what is out of frame was not seen to be gone, so the scene must not drop it.
+  let pictureFull = true;
   let name = current?.name;
   // "Remember this" and the watcher's first episode can both find no site and
   // each create one under a different name; the later of the two defers.
@@ -495,6 +498,7 @@ async function perceive({
     doc.description = describe(doc);
     await createPlace(doc);
     pictured = complete ? items : null;
+    pictureFull = !partial;
     await insertEvent({
       type: "observation",
       observerId,
@@ -534,6 +538,7 @@ async function perceive({
       const items: Item[] = after.map((item) => ({ ...item, since: now, by: observerId }));
       Object.assign($set, { items, catalogued: true });
       pictured = items;
+      pictureFull = !partial;
       await insertEvent({
         type: "observation",
         observerId,
@@ -623,7 +628,7 @@ async function perceive({
       marks: endMarks(pictured, layout, shape),
       observerId,
       at: now.getTime(),
-      full: true,
+      full: pictureFull,
     });
   } else if (name && !unsure && layout.length > 0) {
     await applyScene({
