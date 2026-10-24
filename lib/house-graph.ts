@@ -1,4 +1,6 @@
 import { cypher } from "@/lib/graph";
+import type { ContainerDoc } from "@/lib/perception";
+import type { ObserverId } from "@/lib/types";
 
 // The house as a graph: who lives here, which areas and sites they share, what
 // each site holds, and who is responsible for what. Sites are the same Place
@@ -8,7 +10,7 @@ import { cypher } from "@/lib/graph";
 //   (Person)-[:LIVES_IN]->(House)-[:HAS_AREA]->(Area)-[:HAS_SITE]->(Place)-[:HOLDS]->(Item)
 //   (Person)-[:ROOMMATE_OF]->(Person)
 //   (Person)-[:RESPONSIBLE_FOR]->(Duty)-[:COVERS]->(Area)
-//   (Person)-[:CARRIES]->(Observer)
+//   (Person)-[:CARRIES]->(Observer)-[:WATCHES]->(Place)   (a real sighting, never seeded)
 
 export type HouseGroup = "house" | "person" | "area" | "site" | "item" | "duty" | "observer";
 
@@ -26,6 +28,19 @@ export type HouseGraph = { nodes: HouseNode[]; links: HouseLink[] };
 
 /** Marks places created by the house seed, so reseeding never replaces a real checkpoint. */
 export const HOUSE_MARK = "[house seed] ";
+const LEGACY_MARKS = ["[demo seed] ", HOUSE_MARK];
+
+/** A place the demo seed made (camera updates keep the `seed` field), not a real checkpoint. */
+export function isSeedOwned(doc: Pick<ContainerDoc, "seed" | "description">) {
+  return doc.seed === "house" || LEGACY_MARKS.some((mark) => doc.description?.startsWith(mark));
+}
+
+/** What the cameras saw leave, as seeded sample history. The observer is the camera, not an identified taker. */
+export const HOUSE_EVENTS: { observer: ObserverId; area: string; site: string; object: string; detail: string; minutes: number; summary: string }[] = [
+  { observer: "02", area: "kitchen", site: "fridge", object: "coke can", detail: "3 → 2", minutes: 8, summary: "Observer 02 saw 1 coke can taken from the fridge; 2 left." },
+  { observer: "01", area: "kitchen", site: "fridge", object: "egg", detail: "6 → 4", minutes: 45, summary: "Observer 01 saw 2 eggs taken from the fridge; 4 left." },
+  { observer: "02", area: "household", site: "household shelf", object: "bounty", detail: "4 → 3", minutes: 20, summary: "Observer 02 saw 1 bounty taken from the household shelf; 3 left." },
+];
 
 type SiteSpec = { name: string; items: { name: string; count: number }[] };
 
@@ -173,6 +188,7 @@ const SCOPED = [
   `(a:Person)-[r:RESPONSIBLE_FOR]->(b:Duty), (a)-[:LIVES_IN]->(:House {id: $house})`,
   `(a:Duty)-[r:COVERS]->(b:Area)<-[:HAS_AREA]-(:House {id: $house})`,
   `(a:Person)-[r:CARRIES]->(b:Observer), (a)-[:LIVES_IN]->(:House {id: $house})`,
+  `(a:Observer)-[r:WATCHES]->(b:Place)<-[:HAS_SITE]-(:Area)<-[:HAS_AREA]-(:House {id: $house})`,
 ];
 
 /** The house as nodes and links for the 3D view. */
@@ -190,8 +206,12 @@ export async function readHouseGraph(): Promise<HouseGraph> {
     ),
   ]);
   const cameraKeys = cameraSites.map((row) => str(row.key)).filter(Boolean);
+  // Their items, and which phones watched them: a place both roommates' phones saw is shared.
   const cameraHolds = cameraKeys.length
-    ? await cypher<Row>(`MATCH (a:Place) WHERE a.key IN $keys MATCH (a)-[r:HOLDS]->(b:Item) RETURN ${COLUMNS}`, { keys: cameraKeys })
+    ? [
+        ...(await cypher<Row>(`MATCH (a:Place) WHERE a.key IN $keys MATCH (a)-[r:HOLDS]->(b:Item) RETURN ${COLUMNS}`, { keys: cameraKeys })),
+        ...(await cypher<Row>(`MATCH (b:Place) WHERE b.key IN $keys MATCH (a:Observer)-[r:WATCHES]->(b) RETURN ${COLUMNS}`, { keys: cameraKeys })),
+      ]
     : [];
 
   const nodes = new Map<string, HouseNode>();

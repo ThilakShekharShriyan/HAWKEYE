@@ -141,6 +141,50 @@ set -a; source .env.local; set +a   # exports every key in .env.local
 claude                               # or open your editor from this shell
 ```
 
+## Stage demo
+
+Two roommates, one table, two water bottles.
+
+**Before going on stage**
+
+```bash
+npm run demo:reset -- --yes   # drop rehearsal places, events and assistant memory; keeps the house
+npm run seed:demo             # the house: Thilak, Arnav, areas, sites, sample history
+```
+
+Open the dashboard on the laptop in **one** tab (it runs capture), then each phone's
+observer page: Thilak is `/observe/01`, Arnav is `/observe/02`. Open the FalkorDB
+Browser (`http://localhost:3010`) and `/house` in other windows.
+
+**On stage**
+
+1. Thilak points his phone at the table with two water bottles and says
+   *"Hey Hawkeye, remember this table."* A new place appears with the bottles it holds.
+   Show it in the FalkorDB Browser with **Q1**, and in `/house` (it appears within 5 s).
+2. Thilak closes his phone. Arnav walks over with his, takes one bottle and comes back.
+   The dashboard log shows *"Taken"*, and the bottle count drops to 1 (within about a
+   second when the tracker sees the hand, otherwise after the model's look, about 10 s).
+   Run **Q1** again (both roommates now connect to the table) and **Q2** (what happened).
+3. Thilak asks *"Hey Hawkeye, what happened at the table?"* The answer comes from the
+   graph: Arnav's camera saw a water bottle taken, one left.
+
+**Q1: the new shared place, whose phones saw it, what it holds**
+
+```cypher
+MATCH (pl:Place {kind: 'container'}) WITH pl ORDER BY pl.lastSeen DESC LIMIT 1
+MATCH path = (:Person)-[:CARRIES]->(:Observer)-[:WATCHES]->(pl)-[:HOLDS]->(:Item)
+RETURN path
+```
+
+**Q2: what happened there, and whose phone saw it**
+
+```cypher
+MATCH (pl:Place {kind: 'container'}) WITH pl ORDER BY pl.lastSeen DESC LIMIT 1
+MATCH (p:Person)-[:CARRIES]->(:Observer)-[:SAW]->(e:Event)
+WHERE pl.name IN e.location OR e.metaFrom = pl.name
+RETURN p.name AS who, e.title AS what, e.summary AS detail ORDER BY e.ts
+```
+
 ## What you can ask
 
 - "How many eggs are left?"

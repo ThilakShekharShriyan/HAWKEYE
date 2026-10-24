@@ -12,17 +12,15 @@
 //   npm run seed:demo
 import { insertEvent } from "../lib/events-repo.ts";
 import { cypher } from "../lib/graph.ts";
-import { attachSite, HOUSE, HOUSE_MARK, seedHouseStructure } from "../lib/house-graph.ts";
+import { attachSite, HOUSE, HOUSE_EVENTS, HOUSE_MARK, isSeedOwned, seedHouseStructure } from "../lib/house-graph.ts";
 import type { ContainerDoc } from "../lib/perception.ts";
 import type { ObserverId } from "../lib/types.ts";
 import { createPlace, deletePlace, findPlaceByName, patchPlace } from "../lib/world-store.ts";
 
-const LEGACY_MARKS = ["[demo seed] ", HOUSE_MARK];
 const LEGACY_SITES = ["snack shelf"]; // the earlier two-place demo
 const now = new Date();
 const ago = (minutes: number) => new Date(now.getTime() - minutes * 60_000);
-const owned = (doc: ContainerDoc) =>
-  doc.seed === "house" || LEGACY_MARKS.some((mark) => doc.description?.startsWith(mark));
+const owned = (doc: ContainerDoc) => isSeedOwned(doc);
 
 // Preflight: look at every name before changing anything.
 const names = [...HOUSE.areas.flatMap((area) => area.sites.map((site) => site.name)), ...LEGACY_SITES];
@@ -81,17 +79,14 @@ for (const area of HOUSE.areas) {
       });
     }
     await attachSite(area.id, existing.get(site.name)?.key ?? key);
+    // Writing a place marks its last observer as watching it; no phone has seen a
+    // seeded site, so that link would be invented. Real sightings add it back.
+    await cypher(`MATCH (:Observer)-[w:WATCHES]->(p:Place {key: $key}) DELETE w`, { key: existing.get(site.name)?.key ?? key });
     sites++;
   }
 }
 
-// What the cameras saw leave. The observer is the camera that saw it (each
-// roommate's phone), not an identified taker.
-const events: { observer: ObserverId; area: string; site: string; object: string; detail: string; minutes: number; summary: string }[] = [
-  { observer: "02", area: "kitchen", site: "fridge", object: "coke can", detail: "3 → 2", minutes: 8, summary: "Observer 02 saw 1 coke can taken from the fridge; 2 left." },
-  { observer: "01", area: "kitchen", site: "fridge", object: "egg", detail: "6 → 4", minutes: 45, summary: "Observer 01 saw 2 eggs taken from the fridge; 4 left." },
-  { observer: "02", area: "household", site: "household shelf", object: "bounty", detail: "4 → 3", minutes: 20, summary: "Observer 02 saw 1 bounty taken from the household shelf; 3 left." },
-];
+const events = HOUSE_EVENTS;
 let added = 0;
 for (const e of events) {
   const [{ n }] = await cypher<{ n: unknown }>(`MATCH (e:Event {summary: $summary}) RETURN count(e) AS n`, { summary: e.summary });
