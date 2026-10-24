@@ -10,7 +10,7 @@ import { TRUEFORGE_AGENT_NAME, worldstateAgentSpec } from "@/lib/trueforge-agent
 
 const BASE = (process.env.TRUEFORGE_BASE_URL ?? "http://localhost:8790").replace(/\/$/, "");
 const TIMEOUT_MS = Number(process.env.ANSWER_AGENT_TIMEOUT_MS ?? 25_000);
-const MODEL = process.env.TRUEFORGE_MODEL ?? "openai/gpt-5-4-mini";
+const MODEL = process.env.TRUEFORGE_MODEL ?? "openai/gpt-5-5";
 
 export function hasAnswerAgent() {
   return /^(1|true|on)$/i.test(process.env.TRUEFORGE_AGENT ?? "");
