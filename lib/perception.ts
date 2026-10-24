@@ -21,6 +21,8 @@ import {
 } from "@/lib/inventory";
 import { generateJson, maxImages, isLiteModel } from "@/lib/llm";
 import { lookupPerception, rememberPerception } from "@/lib/perception-cache";
+import { framesToStore, retention } from "@/lib/retention";
+import { liveTracks, remapTracks, trackEpisode, trackEvidence } from "@/lib/tracker";
 import { anchorHint, candidateLine, systemPrompt } from "@/lib/site-prompt";
 import { applyScene, countsFromLayout, endMarks, parseLayout, placeShape } from "@/lib/scene";
 import type { ObserverId } from "@/lib/types";
@@ -36,7 +38,7 @@ import {
   startPrivacy,
 } from "@/lib/world-store";
 
-const PROMPT_VERSION = "episode-v12";
+const PROMPT_VERSION = "episode-v13";
 const OBSERVER_IDS: ObserverId[] = ["01", "02"];
 const MIN_PASSIVE_CONFIDENCE = 0.8;
 const FRAME_TTL_MS = 24 * 60 * 60 * 1000;
@@ -70,6 +72,8 @@ export type ContainerDoc = {
   lastObserver: ObserverId;
   /** When the newest committed episode was received; an older one finishing later is ignored. */
   observedAt?: Date;
+  /** Set by the demo seed so reseeding can tell its own places from real checkpoints; camera updates keep it. */
+  seed?: "house";
 };
 
 export type EpisodeFrame = {
@@ -168,12 +172,14 @@ export async function openPrivacyWindow(observerId: ObserverId, minutes = 5) {
   await startPrivacy(observerId, start, new Date(start.getTime() + minutes * 60000));
 }
 
-async function storeFrames(observerId: ObserverId, frames: EpisodeFrame[]) {
+const frameHash = (image: string) => createHash("sha256").update(image).digest("hex");
+
+/** Stores the frames at these indexes; which ones is decided after perception (see lib/retention.ts). */
+async function storeFrames(observerId: ObserverId, frames: EpisodeFrame[], keep: number[]) {
   const expireAt = new Date(Date.now() + FRAME_TTL_MS);
-  const hashes: string[] = [];
-  for (const frame of frames) {
-    const hash = createHash("sha256").update(frame.image).digest("hex");
-    hashes.push(hash);
+  for (const index of keep) {
+    const frame = frames[index];
+    const hash = frameHash(frame.image);
     await saveFrame({
       hash,
       observerId,
@@ -184,7 +190,6 @@ async function storeFrames(observerId: ObserverId, frames: EpisodeFrame[]) {
       expireAt,
     });
   }
-  return hashes;
 }
 
 function candidateParts(candidates: ContainerDoc[], refs?: number[]) {
@@ -283,13 +288,22 @@ async function perceive({
   const receivedAt = new Date();
   if (await privacyActive(observerId)) return { skipped: "privacy", changes: [] };
 
+  // The tracker's history is a quick local lookup; start it now so it runs
+  // alongside the database reads instead of after them. Null when there is no sidecar.
+  const liveEarly = register
+    ? null
+    : liveTracks(
+        observerId,
+        frames.map((frame) => frame.at),
+      );
+
   const candidates = (await listPlaceDocs(MAX_CANDIDATES)).map((doc) => ({
     ...doc,
     items: withCounts(doc.items),
   }));
   if (knownOnly && candidates.length === 0) return { skipped: "unregistered", changes: [] };
   const startedAt = frames[0]?.at ?? Date.now();
-  const hashes = await storeFrames(observerId, frames);
+  const hashes = frames.map((frame) => frameHash(frame.image));
   const hint = anchorName
     ? anchorHint(
         normName(anchorName),
@@ -320,6 +334,14 @@ async function perceive({
   // reference photo per place is enough to say which place it is.
   const lean = knownOnly ? { frames: budget.frames } : null;
   const sent = (lean ?? budget).frames.map((index) => frames[index]);
+  // Follows people and portable things across the frames the model will see
+  // (roboflow/trackers sidecar). Evidence only: null when the sidecar is off,
+  // and skipped when the answer is cached or this is a registration. The live
+  // tracker's history (a few frames a second, IDs that hold) is better evidence
+  // than tracking the keyframes alone, so it goes first.
+  const kept = (lean ?? budget).frames;
+  const tracks = cached || register ? null : (remapTracks(await liveEarly, kept) ?? (await trackEpisode(sent)));
+  const evidence = trackEvidence(tracks, sent.length);
   const result = cached
     ? {
         data: cached.perceived,
@@ -336,6 +358,7 @@ async function perceive({
         parts: [
           ...candidateParts(candidates, lean ? candidates.map(() => 1) : budget.refs),
           ...(hint ? [{ text: hint }] : []),
+          ...(evidence ? [{ text: evidence }] : []),
           { text: `EPISODE (${sent.length} frame${sent.length === 1 ? "" : "s"}):` },
           ...sent.flatMap((frame, index) => [
             {
@@ -645,6 +668,19 @@ async function perceive({
     });
   }
 
+  // What to keep of the frames, decided now that the outcome and the tracker's
+  // evidence are known. Frames are the heavy part: an episode that found nothing
+  // keeps one picture, and one that matched no place keeps none.
+  const referenceKept = perceived.referenceFrame != null ? kept[perceived.referenceFrame - 1] : undefined;
+  const policy = retention({
+    skipped: unsure ? "unsure" : undefined,
+    register: Boolean(register),
+    identity,
+    changes,
+    tracks,
+  });
+  await storeFrames(observerId, frames, framesToStore(policy, frames.length, referenceKept === undefined ? null : referenceKept + 1));
+
   const tokens = result.usage.total;
   const episodeId = await insertEpisode({
     observerId,
@@ -658,6 +694,8 @@ async function perceive({
     startedAt: new Date(startedAt),
     endedAt: new Date(frames.at(-1)?.at ?? Date.now()),
     frameHashes: hashes,
+    ...(tracks ? { tracks } : {}),
+    retention: policy,
     stats,
     perceived,
     changes,

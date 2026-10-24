@@ -47,8 +47,9 @@ async function findSite(place: string) {
 async function takenFromHere(site: ContainerDoc, label: string) {
   const rows = await cypher<{ object: unknown }>(
     `MATCH (e:Event {type: 'transition', title: 'Taken'})
-     WHERE e.metaFrom = $name AND e.metaObject IS NOT NULL
-     RETURN DISTINCT e.metaObject AS object ORDER BY e.ts DESC LIMIT 20`,
+     WHERE e.metaFrom = $name AND e.metaObject <> ''
+     WITH e.metaObject AS object, max(e.ts) AS ts
+     RETURN object ORDER BY ts DESC LIMIT 20`,
     { name: site.name },
   );
   const names = rows.map((row) => String(row.object)).filter(Boolean);
@@ -66,16 +67,20 @@ export async function applyTrackerDeltas({
   observerId,
   place,
   deltas,
+  guard,
 }: {
   observerId: ObserverId;
   place: string;
   deltas: Delta[];
+  /** Checked once the write lock is held; false (say, the capture lease moved on) writes nothing. */
+  guard?: () => boolean;
 }): Promise<FastResult[]> {
   if (deltas.length === 0) return [];
   const t0 = performance.now();
   const release = await acquireWriteLock();
   const lockMs = Math.round(performance.now() - t0);
   try {
+    if (guard && !guard()) return deltas.map(() => ({ applied: false, reason: "not the capture leader" }));
     const site = await findSite(place);
     const readMs = Math.round(performance.now() - t0) - lockMs;
     if (!site) return deltas.map(() => ({ applied: false, reason: `no unique saved place named ${normName(place)}` }));
@@ -92,9 +97,16 @@ export async function applyTrackerDeltas({
       let item = itemForLabel(working, delta.label);
       let from = item?.count ?? 0;
       let name = item?.name;
+      const stored = working.some((i) => headNoun(i.name) === headNoun(delta.label));
+      if (!item && stored) {
+        // Two stored items share this noun: ambiguous, so leave it to the model episode.
+        results.push({ applied: false, reason: `ambiguous: more than one ${delta.label} at ${site.name}` });
+        continue;
+      }
       if (!item && delta.after > delta.before) {
         // A put-back of the last one: the item left the contents when it reached zero.
-        name = (await takenFromHere(site, delta.label)) ?? undefined;
+        const gone = await takenFromHere(site, delta.label);
+        name = gone && !working.some((i) => i.name === gone) ? gone : undefined;
         from = 0;
       }
       if (!name) {
@@ -159,10 +171,13 @@ export async function applyTrackerDeltas({
       observedAt: now,
     });
     const updateMs = Math.round(performance.now() - t0) - lockMs - readMs;
+    const written: string[] = [];
     try {
-      for (const event of events) await insertEvent(event);
+      for (const event of events) written.push((await insertEvent(event)).id);
     } catch (error) {
-      // Counts without their events would be untraceable: put the place back as it was.
+      // Counts without their events would be untraceable, and events without their
+      // counts would be false: take back the events already written, then the place.
+      if (written.length > 0) await cypher(`MATCH (e:Event) WHERE e.id IN $ids DETACH DELETE e`, { ids: written }).catch(() => {});
       await patchPlace(site.key, before).catch(() => {});
       throw error;
     }
