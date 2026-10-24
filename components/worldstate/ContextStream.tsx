@@ -6,13 +6,14 @@ import { MilestoneEvent } from "@/components/worldstate/events/MilestoneEvent";
 import { QuietEvent } from "@/components/worldstate/events/QuietEvent";
 import type { LiveVoices } from "@/lib/use-live-world";
 import { eventWeight, type VoiceSnapshot, type WorldEvent } from "@/lib/types";
+import { AsciiArt } from "@/components/ascii/AsciiArt";
 
 function PendingVoice({ voice }: { voice: VoiceSnapshot }) {
   const listening = voice.state === "awake";
   return (
     <li className="event-enter grid grid-cols-[4.5rem_1.25rem_minmax(0,1fr)] gap-x-3">
       <span className="pt-0.5 font-mono text-[11px] text-voice/70">LIVE</span>
-      <span className="pt-0.5 font-mono text-[10px] tracking-wide text-white/40">
+      <span className="pt-0.5 font-mono text-[10px] tracking-wide text-ink/40">
         {voice.observerId}
       </span>
       <div className="min-w-0 border-l border-voice/40 py-1 pl-5">
@@ -20,7 +21,7 @@ function PendingVoice({ voice }: { voice: VoiceSnapshot }) {
           <span className="live-dot" aria-hidden />
           {listening ? "Listening" : "Thinking"}
         </p>
-        <p className="mt-2 text-[15px] leading-6 text-white/80">
+        <p className="mt-2 text-[15px] leading-6 text-ink/80">
           {listening ? voice.partial || "\u2026" : `\u201c${voice.question}\u201d`}
         </p>
       </div>
@@ -70,17 +71,18 @@ export function ContextStream({
       className={`flex h-full min-h-0 flex-col transition-opacity duration-700 ${fading ? "opacity-0" : "opacity-100"}`}
     >
       <div className="px-7 pt-5 pb-1 sm:px-8">
-        <p className="text-[11px] tracking-[0.2em] text-white/40">CONTEXT STREAM</p>
+        <p className="text-[11px] tracking-[0.2em] text-ink/40">CONTEXT STREAM</p>
       </div>
       <div className="relative min-h-0 flex-1">
         <div ref={scroller} className="stream-scroll h-full overflow-y-auto">
           {events.length === 0 && pending.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-              <p className="text-[11px] tracking-[0.22em] text-white/45">
+              <p className="text-[11px] tracking-[0.22em] text-ink/45">
                 LIVE CONTEXT
               </p>
-              <p className="mt-3 max-w-md text-[15px] text-white/75">{emptyHint}</p>
-              <p className="mt-2 font-mono text-[11px] text-white/35">
+              <AsciiArt piece="heartbeat" size={5} opacity={0.4} className="mt-4" />
+              <p className="mt-3 max-w-md text-[15px] text-ink/75">{emptyHint}</p>
+              <p className="mt-2 font-mono text-[11px] text-ink/35">
                 2 observers connected
               </p>
             </div>
@@ -120,7 +122,7 @@ export function ContextStream({
           )}
         </div>
         {events.length > 0 ? (
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-ink to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-paper to-transparent" />
         ) : null}
       </div>
     </section>

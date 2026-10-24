@@ -57,12 +57,12 @@ function Mark({
         cx={x}
         cy={y}
         r={lit ? 8 : 6.5}
-        fill={ghost ? "transparent" : "rgba(255,255,255,0.14)"}
-        stroke={lit ? "white" : ghost ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.7)"}
+        fill={ghost ? "transparent" : "rgba(13,17,23,0.14)"}
+        stroke={lit ? "#0d1117" : ghost ? "rgba(13,17,23,0.35)" : "rgba(13,17,23,0.7)"}
         strokeWidth={lit ? 1.6 : 1}
         strokeDasharray={ghost ? "2 1.5" : undefined}
       />
-      <text x={x} y={y + 14} textAnchor="middle" fill="rgba(255,255,255,0.75)" fontSize="3.2">
+      <text x={x} y={y + 14} textAnchor="middle" fill="rgba(13,17,23,0.75)" fontSize="3.2">
         {thing.kind}
       </text>
     </g>
@@ -84,13 +84,13 @@ export function PlaceScene({ scene }: { scene: PlaceSceneData }) {
       <svg viewBox="0 0 100 88" className="h-64 w-full max-w-md" role="img" aria-label="Picture of this place">
         {scene.shape === "shelves" ? (
           <g>
-            <rect x="16" y="8" width="68" height="74" rx="2" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.28)" />
-            <line x1="16" y1="34" x2="70" y2="34" stroke="rgba(255,255,255,0.18)" />
-            <line x1="16" y1="54" x2="70" y2="54" stroke="rgba(255,255,255,0.18)" />
-            <line x1="70" y1="8" x2="70" y2="82" stroke="rgba(255,255,255,0.18)" />
+            <rect x="16" y="8" width="68" height="74" rx="2" fill="rgba(13,17,23,0.03)" stroke="rgba(13,17,23,0.28)" />
+            <line x1="16" y1="34" x2="70" y2="34" stroke="rgba(13,17,23,0.18)" />
+            <line x1="16" y1="54" x2="70" y2="54" stroke="rgba(13,17,23,0.18)" />
+            <line x1="70" y1="8" x2="70" y2="82" stroke="rgba(13,17,23,0.18)" />
           </g>
         ) : (
-          <ellipse cx="50" cy="58" rx="40" ry="18" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.28)" />
+          <ellipse cx="50" cy="58" rx="40" ry="18" fill="rgba(13,17,23,0.04)" stroke="rgba(13,17,23,0.28)" />
         )}
         {scene.slots.flatMap((slot) =>
           slot.things.map((thing, index) => {
@@ -122,11 +122,11 @@ export function PlaceScene({ scene }: { scene: PlaceSceneData }) {
         })}
       </svg>
       <ul className="mt-2 flex flex-col gap-1">
-        {things.length === 0 ? <li className="text-[13px] text-white/40">Nothing placed on the picture yet.</li> : null}
+        {things.length === 0 ? <li className="text-[13px] text-ink/40">Nothing placed on the picture yet.</li> : null}
         {things.map((thing) => (
           <li key={thing.id}>
-            <button type="button" onClick={() => setPicked(thing.id)} className="text-left text-[12px] text-white/70">
-              <span className={thing.state === "ghost" ? "text-white/40" : "text-white/85"}>{thing.label}</span>
+            <button type="button" onClick={() => setPicked(thing.id)} className="text-left text-[12px] text-ink/70">
+              <span className={thing.state === "ghost" ? "text-ink/40" : "text-ink/85"}>{thing.label}</span>
               {thing.state === "ghost"
                 ? ` · taken${thing.takenBy ? ` · ${cameraLabel(thing.takenBy)}` : ""}`
                 : thing.lastSeenBy
@@ -137,14 +137,14 @@ export function PlaceScene({ scene }: { scene: PlaceSceneData }) {
         ))}
       </ul>
       {[...kinds.values()].map((thing) => (
-        <p key={thing.kind} className="mt-2 text-[12px] text-white/45">
+        <p key={thing.kind} className="mt-2 text-[12px] text-ink/45">
           {thing.kind} is {thing.context}
           {thing.restock ? `, restocked from the ${thing.restock}` : ""}.
         </p>
       ))}
-      {path ? <p className="mt-3 font-mono text-[11px] leading-5 text-white/55">{path}</p> : null}
+      {path ? <p className="mt-3 font-mono text-[11px] leading-5 text-ink/55">{path}</p> : null}
       {scene.highlight?.question && !picked ? (
-        <p className="mt-1 text-[11px] text-white/35">From “{scene.highlight.question}”</p>
+        <p className="mt-1 text-[11px] text-ink/35">From “{scene.highlight.question}”</p>
       ) : null}
     </div>
   );

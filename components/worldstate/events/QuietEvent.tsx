@@ -13,7 +13,7 @@ export function QuietEvent({
     <EventFrame event={event} opacity={opacity}>
       {event.type === "location" && event.location ? (
         <div>
-          <p className="text-[13px] leading-5 text-white/70">
+          <p className="text-[13px] leading-5 text-ink/70">
             Observer {event.observerId} entered
           </p>
           <div className="mt-1.5">
@@ -22,9 +22,9 @@ export function QuietEvent({
         </div>
       ) : (
         <div>
-          <p className="text-[13px] leading-5 text-white/70">{event.title}</p>
+          <p className="text-[13px] leading-5 text-ink/70">{event.title}</p>
           {event.message && (
-            <p className="mt-0.5 text-[12px] leading-5 text-white/40">
+            <p className="mt-0.5 text-[12px] leading-5 text-ink/40">
               {event.message}
             </p>
           )}

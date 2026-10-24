@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AsciiArt } from "@/components/ascii/AsciiArt";
 
 type HeaderProps = {
   clock: string;
@@ -37,25 +38,28 @@ function useUsage() {
 export function Header({ clock, latency, latencyLabel = "LATENCY" }: HeaderProps) {
   const usage = useUsage();
   return (
-    <header className="flex h-[76px] shrink-0 items-center justify-between gap-6 border-b border-white/[0.08] px-5 sm:px-7">
-      <div>
-        <h1 className="text-[15px] font-medium tracking-[0.22em] text-white">
-          HAWKEYE
-        </h1>
-        <p className="mt-1 text-[12px] text-white/45">Shared Spatial Memory</p>
+    <header className="flex h-[76px] shrink-0 items-center justify-between gap-6 border-b border-ink/[0.08] px-5 sm:px-7">
+      <div className="flex items-center gap-3">
+        <AsciiArt piece="radar" size={2.3} opacity={0.75} fps={18} />
+        <div>
+          <h1 className="text-[15px] font-medium tracking-[0.22em] text-ink">
+            HAWKEYE
+          </h1>
+          <p className="mt-1 text-[12px] text-ink/45">Shared Spatial Memory</p>
+        </div>
       </div>
       <nav className="hidden items-center gap-6 text-[11px] tracking-[0.16em] sm:flex">
-        <Link href="/places" className="text-white/60 hover:text-white">
+        <Link href="/places" className="text-ink/60 hover:text-ink">
           PLACES &amp; LOGS
         </Link>
         <span
-          className="font-mono tracking-wide text-white/60"
+          className="font-mono tracking-wide text-ink/60"
           title="Estimated from tokens used by this app. Calls inside the deployed agent are not included; the provider's billing page is the authority."
         >
           MODEL COST{" "}
-          <span className="tabular-nums text-white/90">{usage ? dollars(usage.total.usd) : "—"}</span>
+          <span className="tabular-nums text-ink/90">{usage ? dollars(usage.total.usd) : "—"}</span>
           {usage ? (
-            <span className="text-white/35">
+            <span className="text-ink/35">
               {" "}
               · {dollars(usage.lastHour.usd)} last hour · {usage.total.calls} calls
             </span>
@@ -63,15 +67,15 @@ export function Header({ clock, latency, latencyLabel = "LATENCY" }: HeaderProps
         </span>
       </nav>
       <div className="text-right">
-        <p className="flex items-center justify-end gap-2 text-[11px] tracking-[0.16em] text-white/80">
+        <p className="flex items-center justify-end gap-2 text-[11px] tracking-[0.16em] text-ink/80">
           <span className="live-dot" aria-hidden />
           SYSTEM ONLINE
         </p>
-        <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
+        <p className="mt-1 font-mono text-[11px] tracking-wide text-ink/40">
           2 OBSERVERS
-          <span className="px-2 text-white/20">·</span>
+          <span className="px-2 text-ink/20">·</span>
           <span className="tabular-nums">{clock}</span>
-          <span className="px-2 text-white/20">·</span>
+          <span className="px-2 text-ink/20">·</span>
           {latencyLabel} <span className="tabular-nums">{latency}ms</span>
         </p>
       </div>

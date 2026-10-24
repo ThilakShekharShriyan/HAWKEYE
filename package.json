@@ -27,6 +27,7 @@
     "@mediapipe/tasks-vision": "^1.1.0",
     "@truefoundry/trueforge-sdk": "^0.179.0",
     "3d-force-graph": "^1.80.1",
+    "ascii.rest": "^0.4.0",
     "falkordb": "^6.9.2",
     "next": "^16.4.3",
     "react": "19.3.0",
