@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WORLDSTATE",
+  title: "HAWKEYE",
   description: "Shared spatial memory",
 };
 

@@ -1,5 +1,5 @@
 // Usage trends, shopping suggestions and freshness estimates, worked out from
-// the change history WORLDSTATE already keeps ("transition" events) and the
+// the change history HAWKEYE already keeps ("transition" events) and the
 // current contents of each site. Pure: nothing here talks to the graph.
 
 export type Change = {
@@ -66,7 +66,7 @@ export function parseChange(event: TransitionEvent): Change | null {
 }
 
 // Typical life once opened or brought home, in days. A guess from the kind of
-// item, counted from when WORLDSTATE first saw it, not from a printed date.
+// item, counted from when HAWKEYE first saw it, not from a printed date.
 const SHELF_LIFE: [RegExp, number][] = [
   [/chicken|beef|pork|fish|meat|mince|sausage/, 3],
   [/leftover|cooked|takeaway|pizza/, 4],

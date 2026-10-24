@@ -57,7 +57,7 @@ try {
       type: "remote",
       name: "falkordb",
       url: mcpUrl,
-      description: "Read the WORLDSTATE FalkorDB graph: places, things, and who took what.",
+      description: "Read the HAWKEYE FalkorDB graph: places, things, and who took what.",
       ...(mcpKey ? { auth: { type: "header" as const, headers: { Authorization: `Bearer ${mcpKey}` } } } : {}),
     },
   });
@@ -77,7 +77,7 @@ try {
       url: skillUrl,
       ref: skillRef,
       path: "trueforge/skills/worldstate-graph",
-      description: "Read the WORLDSTATE FalkorDB graph before answering who has what, who took it, or what to buy.",
+      description: "Read the HAWKEYE FalkorDB graph before answering who has what, who took it, or what to buy.",
     },
   });
   console.log(`skill worldstate-graph from ${skillUrl} @ ${skillRef}`);

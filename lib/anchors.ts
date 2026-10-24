@@ -2,8 +2,8 @@ import { insertEvent } from "@/lib/events-repo";
 import type { ObserverId } from "@/lib/types";
 import { listAnchorRecords, saveAnchorRecord, type AnchorRecord } from "@/lib/world-store";
 
-// A visual anchor is a place or object a person asked WORLDSTATE to remember
-// ("Hey World, remember this fridge"). Dashboards embed a few reference views
+// A visual anchor is a place or object a person asked HAWKEYE to remember
+// ("Hey Hawkeye, remember this fridge"). Dashboards embed a few reference views
 // of it with an on-device image embedder; from then on every live frame is
 // compared against these references and capture only starts on a match.
 

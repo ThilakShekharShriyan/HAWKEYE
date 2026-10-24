@@ -1,9 +1,9 @@
 ---
 name: worldstate-graph
-description: Read the WORLDSTATE FalkorDB graph before answering who has what, who took it, or what to buy. Use when the question is about a place, an item count, or a change.
+description: Read the HAWKEYE FalkorDB graph before answering who has what, who took it, or what to buy. Use when the question is about a place, an item count, or a change.
 ---
 
-# WORLDSTATE graph
+# HAWKEYE graph
 
 The graph name is `worldstate` unless `FALKORDB_GRAPH` says otherwise.
 

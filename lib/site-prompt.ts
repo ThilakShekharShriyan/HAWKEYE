@@ -2,7 +2,7 @@ import { LETTERS } from "@/lib/identity";
 import { formatItems, type Item } from "@/lib/inventory";
 
 // Prompt text for one perception episode. A "site" is any place things are
-// kept that someone asked WORLDSTATE to remember: a fridge, a table, a shelf.
+// kept that someone asked HAWKEYE to remember: a fridge, a table, a shelf.
 
 export type CandidateInfo = {
   name: string;
@@ -16,7 +16,7 @@ export type CandidateInfo = {
   mark?: string;
 };
 
-export const systemPrompt = (site: string) => `You are the perception module of WORLDSTATE, a shared spatial memory built from phone cameras.
+export const systemPrompt = (site: string) => `You are the perception module of HAWKEYE, a shared spatial memory built from phone cameras.
 You receive a short time-ordered episode of frames showing a ${site}, plus the CANDIDATES: sites already registered, each with reference photos and known contents.
 A site is a place where things are kept: a fridge, a table, a desk, a shelf, a counter, a cupboard. It can also be any place someone asked to remember as a landmark: a doorway, a corner of a room, a whiteboard, a sofa. For a landmark, the inventory is the movable things at it (a bag on the sofa, a jacket on the hook), not the walls, floor or furniture, and never people.
 

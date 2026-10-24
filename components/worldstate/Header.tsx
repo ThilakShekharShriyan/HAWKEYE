@@ -40,7 +40,7 @@ export function Header({ clock, latency, latencyLabel = "LATENCY" }: HeaderProps
     <header className="flex h-[76px] shrink-0 items-center justify-between gap-6 border-b border-white/[0.08] px-5 sm:px-7">
       <div>
         <h1 className="text-[15px] font-medium tracking-[0.22em] text-white">
-          WORLDSTATE
+          HAWKEYE
         </h1>
         <p className="mt-1 text-[12px] text-white/45">Shared Spatial Memory</p>
       </div>

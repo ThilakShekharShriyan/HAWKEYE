@@ -538,7 +538,7 @@ async function perceive({
     // Taxonomic memory: the household's vocabulary of places and sites.
     void defineTerm({
       term: name,
-      definition: `A ${base}${place ? ` in the ${place}` : ""} that WORLDSTATE watches. ${register ? "Registered" : "First seen"} by observer ${observerId}.`,
+      definition: `A ${base}${place ? ` in the ${place}` : ""} that HAWKEYE watches. ${register ? "Registered" : "First seen"} by observer ${observerId}.`,
       relatedTerms: [base, ...(place ? [place] : [])].filter((t) => t !== name),
     });
   } else {

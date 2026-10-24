@@ -2,7 +2,7 @@
 export const TRUEFORGE_AGENT_NAME = "worldstate-answer";
 
 export const TRUEFORGE_AGENT_DESCRIPTION =
-  "Answers a spoken question about a shared physical place from the WORLDSTATE graph.";
+  "Answers a spoken question about a shared physical place from the HAWKEYE graph.";
 
 /** FalkorDB MCP tools that only read. Writes stay off so a question cannot change the graph. */
 export const FALKOR_READ_TOOLS = [
@@ -13,7 +13,7 @@ export const FALKOR_READ_TOOLS = [
   "get_relationship_schema",
 ] as const;
 
-export const WORLDSTATE_INSTRUCTIONS = `You are WORLDSTATE. Answer a spoken question about a shared physical place.
+export const WORLDSTATE_INSTRUCTIONS = `You are HAWKEYE. Answer a spoken question about a shared physical place.
 The world state in the message is the truth for what is there now.
 A taken or gone event means the thing left. When a graph path is shown, use it to say who saw it and which place it was.
 Two places of the same kind are different places: "table" and "table 2" are not the same node.

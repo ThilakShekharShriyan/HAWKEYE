@@ -23,7 +23,7 @@ do we need to buy more.
 
 ## Our answer
 
-**Geospatial checkpoints.** Say "Hey World, remember this" and that spot
+**Geospatial checkpoints.** Say "Hey Hawkeye, remember this" and that spot
 becomes a geospatial checkpoint: a real place in the world, saved with its
 current state in a FalkorDB graph. Checkpoints are global. Every device loads the
 same ones, so any phone that sees that place later knows it is the same
@@ -39,7 +39,7 @@ fresh as the last thing any observer saw.
 **Ask from anywhere.** Because every checkpoint is shared and current, you can
 ask about a place you are not standing in:
 
-> "Hey World, how many coke cans are left on the table?"
+> "Hey Hawkeye, how many coke cans are left on the table?"
 > "Two. Observer 02 took one a few minutes ago."
 
 ## Demo
@@ -51,12 +51,12 @@ ask about a place you are not standing in:
 ## How it works
 
 **1. Create a geospatial checkpoint.**
-Point a phone at a place and say "Hey World, remember this". WORLDSTATE saves
+Point a phone at a place and say "Hey Hawkeye, remember this". HAWKEYE saves
 the checkpoint and counts what is there.
 
 **2. The mesh keeps it updated.**
 Any observer that sees the checkpoint again recognises it. When someone takes
-or adds something, the checkpoint's state is updated and WORLDSTATE notes
+or adds something, the checkpoint's state is updated and HAWKEYE notes
 which observer saw it.
 
 **3. Ask from anywhere.**
@@ -78,7 +78,7 @@ npm run trueforge:setup    # registers the OpenAI model, the MCP server and the 
 npx next dev -p 3100
 ```
 
-Ask: `curl -X POST localhost:3100/api/ask -H 'content-type: application/json' -d '{"observerId":"01","text":"Hey World, who took the last coke?"}'`.
+Ask: `curl -X POST localhost:3100/api/ask -H 'content-type: application/json' -d '{"observerId":"01","text":"Hey Hawkeye, who took the last coke?"}'`.
 Each question opens a TrueForge session, so it shows up in the harness UI.
 
 

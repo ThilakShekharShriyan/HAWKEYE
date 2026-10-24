@@ -25,7 +25,7 @@ const statusCopy: Record<Status, string> = {
   idle: "Ready",
   starting: "Opening camera...",
   waiting: "Waiting for dashboard...",
-  connected: "Streaming to WORLDSTATE",
+  connected: "Streaming to HAWKEYE",
   busy: "Another device is streaming as this observer",
   error: "Camera unavailable",
 };
@@ -268,7 +268,7 @@ export function PhoneObserver({ observerId }: { observerId: ObserverId }) {
       };
       // Ask for the microphone in the same prompt as the camera: voice opens
       // it a moment later, and a second prompt at that point is easy to miss
-      // or dismiss, which leaves "Hey World" silently dead.
+      // or dismiss, which leaves "Hey Hawkeye" silently dead.
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video, audio: true });
@@ -324,7 +324,7 @@ export function PhoneObserver({ observerId }: { observerId: ObserverId }) {
 
       <header className="relative z-10 flex items-start justify-between p-5">
         <div>
-          <p className="text-[13px] tracking-[0.22em] text-white">WORLDSTATE</p>
+          <p className="text-[13px] tracking-[0.22em] text-white">HAWKEYE</p>
           <p className="mt-1 text-[11px] tracking-[0.18em] text-white/55">
             OBSERVER {observerId}
           </p>
@@ -384,14 +384,14 @@ export function PhoneObserver({ observerId }: { observerId: ObserverId }) {
           </button>
         ) : null}
         <p className="mt-3 text-center font-mono text-[11px] tracking-wide text-white/60">
-          {relaying && status === "waiting" ? "Streaming to WORLDSTATE (relayed)" : statusCopy[status]}
+          {relaying && status === "waiting" ? "Streaming to HAWKEYE (relayed)" : statusCopy[status]}
         </p>
         {error ? (
           <p className="mt-1 text-center text-[12px] text-white/45">{error}</p>
         ) : null}
         {micBlocked ? (
           <p className="mt-1 text-center text-[12px] text-live">
-            Microphone blocked: allow it for this site in the browser settings, then reload, or “Hey World” will not hear you.
+            Microphone blocked: allow it for this site in the browser settings, then reload, or “Hey Hawkeye” will not hear you.
           </p>
         ) : null}
       </div>

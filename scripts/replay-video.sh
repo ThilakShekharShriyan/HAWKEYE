@@ -1,5 +1,5 @@
 #!/bin/bash
-# Replays a video into WORLDSTATE as if a phone were streaming it, through the
+# Replays a video into HAWKEYE as if a phone were streaming it, through the
 # frame relay (lib/frame-relay.ts). A dashboard tab must be open on the same
 # server, since detection and capture run there.
 #

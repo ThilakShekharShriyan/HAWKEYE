@@ -140,7 +140,7 @@ export function useVoiceAssistant({
         clog("voice", "asked", { observer: observerId, text, status: response.status, reply, error: body.error });
       } catch (cause) {
         clog("voice", "ask failed to reach the server", { observer: observerId, text, error: String(cause).slice(0, 200) });
-        reply = "I couldn't reach WORLDSTATE.";
+        reply = "I couldn't reach HAWKEYE.";
       }
 
       setAnswer(reply);
@@ -263,7 +263,7 @@ export function useVoiceAssistant({
         languageCode: "en",
         commitStrategy: CommitStrategy.VAD,
         vadSilenceThresholdSecs: 0.9,
-        keyterms: ["Hey World", "WORLDSTATE"],
+        keyterms: ["Hey Hawkeye", "Hawkeye", "Hey World"],
         noVerbatim: true,
         microphone: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
