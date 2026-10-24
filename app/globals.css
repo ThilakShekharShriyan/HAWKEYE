@@ -18,6 +18,12 @@
   --color-voice: #6b5bb5;
   --color-memory: #128a7b;
   --color-change: #a87a1e;
+  /* The same colours, light, for text over camera video (dark overlays). */
+  --color-live-light: #e15b55;
+  --color-location-light: #7eb6c9;
+  --color-voice-light: #b3a4d6;
+  --color-memory-light: #6fbfb3;
+  --color-change-light: #c6a56a;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -43,6 +49,20 @@ body {
   color: var(--color-ink);
   user-select: none;
   pointer-events: none;
+}
+
+/* The ascii globe behind every page: faint, centred, fading toward the edges. */
+.earth-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.13;
+  -webkit-mask-image: radial-gradient(ellipse 48% 52% at 50% 50%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 48% 52% at 50% 50%, #000 35%, transparent 100%);
 }
 
 /* A thin scanning line, for loading states. */

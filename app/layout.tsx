@@ -1,3 +1,4 @@
+import { EarthBackground } from "@/components/ascii/EarthBackground";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="h-full overflow-hidden bg-paper font-sans text-foreground" suppressHydrationWarning>
+        <EarthBackground />
         {children}
       </body>
     </html>

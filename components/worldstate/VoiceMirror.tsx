@@ -19,7 +19,7 @@ export function VoiceMirror({ voice }: { voice?: VoiceSnapshot }) {
         data-open
       >
         <p
-          className={`flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] uppercase ${listening ? "text-voice" : "text-white/60"}`}
+          className={`flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] uppercase ${listening ? "text-voice-light" : "text-white/60"}`}
         >
           {listening || voice.state === "speaking" ? (
             <span className="live-dot" aria-hidden />

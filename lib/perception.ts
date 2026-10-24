@@ -21,7 +21,7 @@ import {
 } from "@/lib/inventory";
 import { generateJson, maxImages, isLiteModel } from "@/lib/llm";
 import { lookupPerception, rememberPerception } from "@/lib/perception-cache";
-import { anchoredFirst, MAX_CANDIDATES, withAnchoredPlace } from "@/lib/candidates";
+import { candidatesFor, MAX_CANDIDATES } from "@/lib/candidates";
 import { framesToStore, retention } from "@/lib/retention";
 import { liveTracks, remapTracks, trackEpisode, trackEvidence } from "@/lib/tracker";
 import { anchorHint, candidateLine, systemPrompt } from "@/lib/site-prompt";
@@ -305,7 +305,9 @@ async function perceive({
   const named = anchorName ? normName(anchorName) : null;
   const anchoredPlace =
     named && !recent.some((doc) => doc.name === named) ? await findPlaceByName(named) : null;
-  const candidates = withAnchoredPlace(recent, anchoredPlace).map((doc) => ({
+  // Ordered once, here: the hint, the cache signature, the image budget and the prompt all letter
+  // the candidates by position, so they must all see the same order.
+  const candidates = candidatesFor(recent, anchoredPlace, anchorName).map((doc) => ({
     ...doc,
     items: withCounts(doc.items),
   }));
@@ -331,7 +333,6 @@ async function perceive({
   // A provider with an image limit gets the first and last frame, then one
   // reference photo per candidate; the candidate the dashboard's anchor match
   // points at goes first so its photo is the one kept.
-  candidates.splice(0, candidates.length, ...anchoredFirst(candidates, anchorName));
   const budget = imageBudget(
     maxImages(),
     candidates.map((candidate) => candidate.references?.length ?? 0),

@@ -5,9 +5,9 @@ import type { SpeechIntent, SpeechState } from "@/lib/types";
 
 const intentClass: Record<SpeechIntent | "neutral", string> = {
   neutral: "border-white/15 bg-black/55 text-white/90",
-  remember: "border-memory/45 bg-black/60 text-white",
+  remember: "border-memory-light/45 bg-black/60 text-white",
   ignore: "border-white/10 bg-black/40 text-white/45",
-  context: "border-location/35 bg-black/55 text-white/85",
+  context: "border-location-light/35 bg-black/55 text-white/85",
 };
 
 const intentLabel: Record<SpeechIntent, string | null> = {

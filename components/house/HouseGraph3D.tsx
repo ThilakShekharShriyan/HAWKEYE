@@ -120,7 +120,7 @@ export function HouseGraph3D() {
       ]);
       if (cancelled) return;
       const graph = new ForceGraph3D(element)
-        .backgroundColor("#f6f7f9")
+        .backgroundColor("rgba(0,0,0,0)")
         .nodeRelSize(4.5)
         .warmupTicks(80)
         .cooldownTime(4000)
@@ -239,7 +239,7 @@ export function HouseGraph3D() {
   }, [data, picked]);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-paper text-ink">
+    <main className="relative h-screen w-screen overflow-hidden text-ink">
       <div ref={mount} className="absolute inset-0" />
 
       <header className="pointer-events-none absolute left-5 top-4 z-10">
