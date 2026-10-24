@@ -33,9 +33,12 @@ const register = await post("/api/ask", {
 });
 console.log(`1. register  ${register.status} ${register.ms}ms  anchor=${register.json.anchor}  "${register.json.answer}"`);
 
+const viewer = "demo-check";
+await post("/api/capture/lease", { viewer });
 const now = Date.now();
 const episode = await post("/api/episodes", {
   observerId: "02",
+  viewer,
   trigger: `${site} · demo-check`,
   site,
   frames: [

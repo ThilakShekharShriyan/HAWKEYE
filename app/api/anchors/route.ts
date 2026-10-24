@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   if (!body.observerId || !isObserverId(body.observerId)) {
     return Response.json({ error: "unknown observer" }, { status: 404 });
   }
-  if (body.viewer && !holdsLease(body.viewer)) {
+  if (typeof body.viewer !== "string" || !holdsLease(body.viewer)) {
     return Response.json({ error: "not the capture leader" }, { status: 409 });
   }
   const references = (body.references ?? [])

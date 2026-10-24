@@ -2,6 +2,7 @@ import type { ObserverId } from "@/lib/types";
 
 const PHONE_STALE_MS = 6000;
 const VIEWER_STALE_MS = 30000;
+const MAX_VIEWERS = 8;
 
 export type ViewerOffer = {
   viewer: string;
@@ -111,6 +112,12 @@ export function viewerOffer(
 ) {
   const slot = slotFor(id);
   if (slot.phone?.session !== entry.phoneSession) return false;
+  slot.viewers.delete(entry.viewer);
+  while (slot.viewers.size >= MAX_VIEWERS) {
+    const oldest = slot.viewers.keys().next().value;
+    if (oldest === undefined) break;
+    slot.viewers.delete(oldest);
+  }
   slot.viewers.set(entry.viewer, { ...entry, at: Date.now() });
   return true;
 }

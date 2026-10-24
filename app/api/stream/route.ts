@@ -7,6 +7,7 @@ export async function GET(request: Request) {
   const encoder = new TextEncoder();
   let unsubscribe = () => {};
   let unsubscribeVoice = () => {};
+  let cleanup = () => {};
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -27,6 +28,8 @@ export async function GET(request: Request) {
         } catch {}
       };
 
+      cleanup = close;
+
       unsubscribe = onEvent((event) => {
         send(`data: ${JSON.stringify(event)}\n\n`);
       });
@@ -41,8 +44,7 @@ export async function GET(request: Request) {
       });
     },
     cancel() {
-      unsubscribe();
-      unsubscribeVoice();
+      cleanup();
     },
   });
 

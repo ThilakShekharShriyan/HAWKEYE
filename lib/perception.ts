@@ -67,6 +67,8 @@ export type ContainerDoc = {
   mark?: string;
   lastSeen: Date;
   lastObserver: ObserverId;
+  /** When the newest committed episode was received; an older one finishing later is ignored. */
+  observedAt?: Date;
 };
 
 export type EpisodeFrame = {
@@ -116,7 +118,7 @@ type Perceived = {
 
 export type EpisodeResult = {
   episodeId?: string;
-  skipped?: "privacy" | "unsure" | "unregistered";
+  skipped?: "privacy" | "unsure" | "unregistered" | "superseded" | "stale";
   container?: string;
   identity?: "known" | "new";
   contentsVisible?: boolean;
@@ -251,6 +253,7 @@ async function perceive({
   register,
   knownOnly,
   passive,
+  commitGuard,
 }: {
   observerId: ObserverId;
   trigger: string;
@@ -273,7 +276,10 @@ async function perceive({
    * detector hit): the model's match has to be a confident one.
    */
   passive?: boolean;
+  /** Checked inside the write lock; false means this capture lost its authority while the model ran. */
+  commitGuard?: () => boolean;
 }): Promise<EpisodeResult> {
+  const receivedAt = new Date();
   if (await privacyActive(observerId)) return { skipped: "privacy", changes: [] };
 
   const candidates = (await listPlaceDocs(MAX_CANDIDATES)).map((doc) => ({
@@ -367,6 +373,10 @@ async function perceive({
   // credit. From here on episodes run one at a time against fresh contents.
   const release = await acquireWriteLock();
   try {
+  if (commitGuard && !commitGuard()) {
+    log("episode", "superseded: capture lease lost before commit", { observer: observerId });
+    return { skipped: "superseded", changes: [], latencyMs: result.latencyMs, tokens: result.usage.total };
+  }
   const fresh = matched ? await findPlace(matched.key) : null;
   const current = matched ? { ...matched, ...(fresh ?? {}), items: withCounts((fresh ?? matched).items) } : null;
 
@@ -416,6 +426,14 @@ async function perceive({
     ? { image: referenceFrame.image, at: new Date(referenceFrame.at), observerId }
     : undefined;
 
+  // An older episode whose model call finished after a newer one committed
+  // must not put its inventory over the newer state.
+  const stale = Boolean(current?.observedAt && current.observedAt.getTime() > receivedAt.getTime());
+  if (stale) {
+    log("episode", "stale: a newer observation already committed", { observer: observerId, place: current?.name });
+    return { skipped: "stale", container: current?.name, changes: [], latencyMs: result.latencyMs, tokens: result.usage.total };
+  }
+
   const changes: string[] = [];
   let identity: "known" | "new" | undefined;
   let pictured: { name: string; count: number }[] | null = null;
@@ -454,7 +472,10 @@ async function perceive({
       base,
       candidates.map((c) => c.name),
     );
-    const items: Item[] = (after ?? []).map((item) => ({ ...item, since: now, by: observerId }));
+    // Only a full view is a complete inventory; a partial first look leaves
+    // the contents unseen until a full one arrives.
+    const complete = Boolean(after) && !partial;
+    const items: Item[] = (complete ? (after ?? []) : []).map((item) => ({ ...item, since: now, by: observerId }));
     const mark = placeMark(perceived.observed);
     const doc: ContainerDoc = {
       key: containerKey(name),
@@ -462,28 +483,29 @@ async function perceive({
       name,
       place,
       items,
-      catalogued: Boolean(after),
+      catalogued: complete,
       references: reference ? [reference] : [],
       description: "",
       mark,
       lastSeen: now,
       lastObserver: observerId,
+      observedAt: receivedAt,
     };
     doc.description = describe(doc);
     await createPlace(doc);
-    pictured = items;
+    pictured = complete ? items : null;
     await insertEvent({
       type: "observation",
       observerId,
       title: register ? `${name} registered` : `New ${base} seen: ${name}`,
       location: place ? [place, name] : [name],
-      message: after
+      message: complete
         ? `${totalCount(items)} things seen by Observer ${observerId}`
         : `Contents not seen yet · registered by Observer ${observerId}`,
-      metadata: after ? { items: items.map((item) => formatItems([item])) } : undefined,
+      metadata: complete ? { items: items.map((item) => formatItems([item])) } : undefined,
       summary: `${describe(doc)} ${register ? "Registered" : "First seen"} by observer ${observerId} at ${time}.`,
     });
-    changes.push(after ? `new ${name} · ${formatItems(items)}` : `new ${name}`);
+    changes.push(complete ? `new ${name} · ${formatItems(items)}` : `new ${name}`);
     // Taxonomic memory: the household's vocabulary of places and sites.
     void defineTerm({
       term: name,
@@ -496,6 +518,7 @@ async function perceive({
     const $set: Partial<ContainerDoc> = {
       lastSeen: now,
       lastObserver: observerId,
+      observedAt: receivedAt,
       place: current.place ?? place,
       ...(current.mark ? {} : { mark: placeMark(perceived.observed) }),
     };
@@ -506,7 +529,7 @@ async function perceive({
     }
     const location = $set.place ? [$set.place, current.name] : [current.name];
 
-    if (after && current.catalogued === false) {
+    if (after && !partial && current.catalogued === false) {
       const items: Item[] = after.map((item) => ({ ...item, since: now, by: observerId }));
       Object.assign($set, { items, catalogued: true });
       pictured = items;
@@ -533,7 +556,7 @@ async function perceive({
       const target = partial ? partialTarget(current.items, sure, removals) : sure;
       const { items, deltas } = reconcile(current.items, target, observerId, now);
       $set.items = items;
-      pictured = items;
+      pictured = current.catalogued === false ? null : items;
 
       for (const delta of deltas) {
         const amount = Math.abs(delta.to - delta.from);

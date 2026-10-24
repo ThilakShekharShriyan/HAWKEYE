@@ -112,11 +112,15 @@ export function useLiveWorld(enabled: boolean) {
     // there when the page loaded are shown but not acted on.
     const handled = new Set<string>();
     let loaded = false;
-    const receive = (event: WorldEvent) => {
+    // Streamed while the first fetch is still in flight: these are live, not
+    // history, so they are acted on once loading finishes.
+    const early: WorldEvent[] = [];
+    const receive = (event: WorldEvent, live = true) => {
       add(event);
       if (handled.has(event.id)) return;
       handled.add(event.id);
       if (loaded) onAnchorEvent(event);
+      else if (live) early.push(event);
     };
     const lastVoice = new Map<ObserverId, string>();
     const receiveVoice = (snapshot: VoiceSnapshot) => {
@@ -140,9 +144,12 @@ export function useLiveWorld(enabled: boolean) {
           warned = true;
           clog("events", "event stream is not delivering; relying on polling", { missed });
         }
-        body.events.forEach(receive);
+        body.events.forEach((event) => receive(event, false));
         body.voices?.forEach(receiveVoice);
-        loaded = true;
+        if (!loaded) {
+          loaded = true;
+          early.splice(0).forEach(onAnchorEvent);
+        }
       } catch {
         // The next poll retries.
       }

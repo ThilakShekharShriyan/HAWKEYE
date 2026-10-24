@@ -7,6 +7,7 @@ function revivePlace(raw: ContainerDoc): ContainerDoc {
   return {
     ...raw,
     lastSeen: asDate(raw.lastSeen),
+    observedAt: raw.observedAt ? asDate(raw.observedAt) : undefined,
     items: (raw.items ?? []).map((item) => ({ ...item, since: asDate(item.since) })),
     references: raw.references?.map((reference) => ({ ...reference, at: asDate(reference.at) })),
     lastChange: raw.lastChange ? { ...raw.lastChange, at: asDate(raw.lastChange.at) } : undefined,
@@ -104,15 +105,36 @@ export async function findRecentPlace(excludeKeys: string[], since: Date) {
   return typeof name === "string" && name ? { name } : null;
 }
 
+// Each place is read, merged and rewritten (doc plus HOLDS edges) in several
+// queries; two phones reporting the same shelf at once would otherwise lose
+// one another's changes. One chain of promises per key keeps them in turn.
+const keyLocks = new Map<string, Promise<unknown>>();
+
+async function withKeyLock<T>(key: string, task: () => Promise<T>): Promise<T> {
+  const previous = keyLocks.get(key) ?? Promise.resolve();
+  const run = previous.then(task, task);
+  const tail = run.catch(() => {});
+  keyLocks.set(key, tail);
+  try {
+    return await run;
+  } finally {
+    if (keyLocks.get(key) === tail) keyLocks.delete(key);
+  }
+}
+
 export async function createPlace(doc: ContainerDoc) {
-  if (await findPlace(doc.key)) return;
-  await writePlace(doc);
+  await withKeyLock(doc.key, async () => {
+    if (await findPlace(doc.key)) return;
+    await writePlace(doc);
+  });
 }
 
 export async function patchPlace(key: string, patch: Partial<ContainerDoc>) {
-  const current = await findPlace(key);
-  if (!current) return;
-  await writePlace({ ...current, ...patch, key });
+  await withKeyLock(key, async () => {
+    const current = await findPlace(key);
+    if (!current) return;
+    await writePlace({ ...current, ...patch, key });
+  });
 }
 
 export type StoredEpisode = {
@@ -361,7 +383,19 @@ export async function cacheRead<T>(key: string): Promise<{ perceived: T; model: 
   return { perceived: doc.perceived, model: doc.model };
 }
 
+const PURGE_EVERY_MS = 10 * 60 * 1000;
+let lastPurge = 0;
+
+/** Expired Cache nodes are ignored on read; delete them now and then so they do not pile up. */
+async function purgeExpiredCache() {
+  const now = Date.now();
+  if (now - lastPurge < PURGE_EVERY_MS) return;
+  lastPurge = now;
+  await cypher(`MATCH (c:Cache) WHERE c.expireAt <= $now DELETE c`, { now }).catch(() => {});
+}
+
 export async function cacheWrite<T>(key: string, promptVersion: string, perceived: T, model: string, expireAt: Date) {
+  void purgeExpiredCache();
   await cypher(
     `MERGE (c:Cache {key: $key})
      ON CREATE SET c.hits = 0

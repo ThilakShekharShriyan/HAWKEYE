@@ -5,9 +5,21 @@ import { perceiveEpisode, type EpisodeFrame, type EpisodeStats } from "@/lib/per
 import { isObserverId } from "@/lib/signal-store";
 
 const MAX_FRAMES = 6;
+/** Decoded bytes allowed per frame, and per request in total. */
+const MAX_FRAME_BYTES = 1_500_000;
+const MAX_TOTAL_BYTES = 6_000_000;
+/** Capture times are client clocks; accept a window around the server's. */
+const MAX_PAST_MS = 10 * 60_000;
+const MAX_FUTURE_MS = 60_000;
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+const PHASES = new Set(["pre", "during", "after"]);
 const AUTO_REGISTER = /^(1|true|on)$/i.test(process.env.AUTO_REGISTER ?? "");
 
 export async function POST(request: Request) {
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (declared > MAX_TOTAL_BYTES * 2) {
+    return Response.json({ error: "request too large" }, { status: 413 });
+  }
   const body = (await request.json().catch(() => ({}))) as {
     observerId?: string;
     viewer?: string;
@@ -25,15 +37,39 @@ export async function POST(request: Request) {
   if (!body.observerId || !isObserverId(body.observerId)) {
     return Response.json({ error: "unknown observer" }, { status: 404 });
   }
-  if (body.viewer && !holdsLease(body.viewer)) {
+  if (typeof body.viewer !== "string" || !holdsLease(body.viewer)) {
     log("episode", "rejected: not the capture leader", { observer: body.observerId, viewer: body.viewer });
     return Response.json({ error: "not the capture leader" }, { status: 409 });
   }
-  const frames = (body.frames ?? [])
-    .filter((frame) => typeof frame.image === "string" && frame.image.length > 0)
+  const rawFrames = Array.isArray(body.frames) ? body.frames : [];
+  const candidates = rawFrames
+    .filter((frame) => frame && typeof frame.image === "string" && frame.image.length > 0)
     .slice(-MAX_FRAMES)
     .map((frame) => ({ ...frame, image: frame.image.replace(/^data:image\/\w+;base64,/, "") }));
-  if (frames.length === 0) return Response.json({ error: "frames required" }, { status: 400 });
+  if (candidates.length === 0) return Response.json({ error: "frames required" }, { status: 400 });
+  const now = Date.now();
+  let total = 0;
+  for (const [index, frame] of candidates.entries()) {
+    const bytes = Math.floor((frame.image.length * 3) / 4);
+    total += bytes;
+    if (bytes > MAX_FRAME_BYTES || total > MAX_TOTAL_BYTES) {
+      return Response.json({ error: "frames too large" }, { status: 413 });
+    }
+    if (!BASE64.test(frame.image)) {
+      return Response.json({ error: "frame is not base64 image data" }, { status: 400 });
+    }
+    if (
+      typeof frame.at !== "number" ||
+      !Number.isFinite(frame.at) ||
+      frame.at < now - MAX_PAST_MS ||
+      frame.at > now + MAX_FUTURE_MS ||
+      (index > 0 && frame.at < candidates[index - 1].at) ||
+      !PHASES.has(frame.phase)
+    ) {
+      return Response.json({ error: "invalid frame time or phase" }, { status: 400 });
+    }
+  }
+  const frames = candidates;
   if (!hasModel()) return Response.json({ error: MISSING_KEY_MESSAGE }, { status: 503 });
   const container = (body.anchor?.container ?? body.anchor?.name ?? body.site ?? "")
     .toLowerCase()
@@ -66,6 +102,8 @@ export async function POST(request: Request) {
       // AUTO_REGISTER=1 restores registering whatever the detector finds.
       knownOnly: body.knownOnly === true || !AUTO_REGISTER,
       passive: body.passive === true && !body.anchor,
+      // The lease can lapse during a slow model call; re-checked at commit.
+      commitGuard: () => holdsLease(body.viewer as string),
     });
     log("episode", "done", {
       observer: body.observerId,

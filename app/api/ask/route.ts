@@ -259,6 +259,7 @@ async function answer(
     // Short-term memory for this observer's session; the platform distills it
     // into episodic and semantic records in the background.
     void recordTurn({ observerId, role: "user", content: text });
+    let registrationFailed = false;
     if (decision.intent === "remember" && image && anchor) {
       const registration = await perceiveEpisode({
         observerId,
@@ -276,7 +277,12 @@ async function answer(
         skipped: registration?.skipped,
         failed: registration === null,
       });
-      if (registration?.skipped === "unsure") {
+      const registered = Boolean(registration?.container) && registration?.skipped === undefined;
+      if (registration === null) {
+        decision.answer = "I couldn't register that place just now. Please try again in a moment.";
+      } else if (registration.skipped === "privacy") {
+        decision.answer = "Privacy mode is on, so I didn't register that place.";
+      } else if (registration.skipped === "unsure") {
         decision.answer =
           "I couldn't tell whether that's already registered. Try again with the whole front in view.";
       } else if (registration?.container) {
@@ -284,9 +290,21 @@ async function answer(
           registration.identity === "known"
             ? `That's already registered as the ${registration.container}.`
             : `Registered as the ${registration.container}. I'll recognise it from now on.`;
+      } else {
+        decision.answer = "I couldn't register that place. Try again with it fully in view.";
       }
+      registrationFailed = !registered;
     }
-    if (decision.intent === "remember" && decision.memory) {
+    if (registrationFailed) {
+      await insertEvent({
+        type: "answer",
+        observerId,
+        title: "Answer",
+        message: decision.answer,
+        summary: `Q: ${text} A: ${decision.answer}`,
+        metadata: { question: text, latencyMs },
+      });
+    } else if (decision.intent === "remember" && decision.memory) {
       void rememberFact({
         label: anchor ?? decision.memory.slice(0, 60),
         text: decision.memory,

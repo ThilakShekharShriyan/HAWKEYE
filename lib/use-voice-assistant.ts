@@ -297,7 +297,7 @@ export function useVoiceAssistant({
     };
 
     const token = await fetchToken();
-    if (!token) return null;
+    if (!token || !activeRef.current) return null;
     open(token);
 
     return {
@@ -335,6 +335,10 @@ export function useVoiceAssistant({
 
     try {
       const scribe = await connectScribe();
+      if (!activeRef.current) {
+        scribe?.close();
+        return;
+      }
       if (scribe) {
         earRef.current = scribe;
         setEngine("elevenlabs");
