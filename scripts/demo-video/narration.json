@@ -1,0 +1,11 @@
+{
+  "s1": "This is HAWKEYE: a shared memory for the rooms you live in, built on a FalkorDB graph.",
+  "s2": "Roommates share fridges, tables and supplies. But nobody knows what is left, who took the last one, or what to buy. Every phone sees the room, and then forgets it.",
+  "s3": "HAWKEYE keeps the whole house as a graph. Thilak and Arnav are roommates. They share the kitchen, the laundry and the household supplies, and their phones are the cameras.",
+  "s4": "Thilak points his phone at the table and says: Hey Hawkeye, remember this table.",
+  "s5": "Seconds later, a new shared entity appears in FalkorDB: the table, holding two water bottles, a laptop and everything else on it, linked to Thilak's phone. The places page shows the snapshot and the timeline.",
+  "s6": "Later, Arnav walks over with his phone and takes one of the water bottles.",
+  "s7": "Arnav's camera sees it happen. The water bottle count drops from two to one, a Taken event is written into the graph, and the table is now linked to both roommates.",
+  "s8": "Then Thilak simply asks.",
+  "s9": "FalkorDB holds the memory. TrueForge, running on OpenAI, answers straight from the graph. And every change shipped through pull requests reviewed by Qodo. This is HAWKEYE."
+}
