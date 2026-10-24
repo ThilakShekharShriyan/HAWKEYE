@@ -163,6 +163,37 @@ describe("applyTrackerDelta", () => {
     expect((await findPlaceByName("table"))?.lastChange?.items?.sort()).toEqual(["chips", "water bottle"]);
   });
 
+  it("writes nothing when the commit guard says the capture lease moved on", async () => {
+    const results = await applyTrackerDeltas({ observerId: "01", place: "table", deltas: [delta()], guard: () => false });
+    expect(results).toEqual([{ applied: false, reason: "not the capture leader" }]);
+    expect(await holds("table", "water bottle")).toBe(2);
+    expect(await events()).toHaveLength(0);
+  });
+
+  it("does not overwrite a still-stored bottle when a put-back is ambiguous", async () => {
+    // Water bottles were taken before; beer bottles are also stored. "bottle" now means two items.
+    await cypher(`CREATE (:Event {id: 'e-old', type: 'transition', title: 'Taken', metaFrom: 'table', metaObject: 'water bottle', ts: 1})`);
+    await patchPlace("container:table", {
+      items: [
+        { name: "water bottle", count: 3, since: new Date(), by: "01" },
+        { name: "beer bottle", count: 2, since: new Date(), by: "01" },
+      ],
+    });
+    const result = await applyTrackerDelta({ observerId: "01", place: "table", delta: delta({ before: 0, after: 1 }) });
+    expect(result.applied).toBe(false);
+    expect(await holds("table", "water bottle")).toBe(3);
+    expect(await holds("table", "beer bottle")).toBe(2);
+    expect(await events()).toHaveLength(1); // only the seeded history event: nothing new was written
+  });
+
+  it("finds the last thing taken even when other Taken events have no object", async () => {
+    await cypher(`CREATE (:Event {id: 'e-a', type: 'transition', title: 'Taken', metaFrom: 'table', metaObject: '', ts: 5}),
+                         (:Event {id: 'e-b', type: 'transition', title: 'Taken', metaFrom: 'table', metaObject: 'water bottle', ts: 4})`);
+    await applyTrackerDelta({ observerId: "01", place: "table", delta: delta({ before: 2, after: 0 }) });
+    const back = await applyTrackerDelta({ observerId: "02", place: "table", delta: delta({ before: 0, after: 1, startedAt: Date.now() + 1000 }) });
+    expect(back).toEqual({ applied: true, item: "water bottle", from: 0, to: 1 });
+  });
+
   it("serialises two simultaneous changes so each is counted exactly once", async () => {
     // Two phones each see one bottle leave at the same moment: 2 -> 1 -> 0, never 2 -> 1 twice.
     const results = await Promise.all([

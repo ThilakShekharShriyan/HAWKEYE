@@ -4,10 +4,10 @@ import type { LiveFrame } from "../lib/tracker";
 type Obj = { id: number; label: string; confidence: number; box: [number, number, number, number]; trail: [number, number][] };
 const queue: Obj[][] = [];
 
-vi.mock("../lib/tracker", () => ({
-  liveEnabled: () => true,
-  trackLive: vi.fn(async (): Promise<LiveFrame> => ({ seq: 1, at: 0, ms: 1, objects: queue.shift() ?? [] })),
-}));
+const trackLive = vi.fn(async (..._args: unknown[]): Promise<LiveFrame> => ({ seq: 1, at: 0, ms: 1, objects: queue.shift() ?? [] }));
+vi.mock("../lib/tracker", () => ({ liveEnabled: () => true, trackLive: (...args: unknown[]) => trackLive(...args) }));
+const privacy = { on: false };
+vi.mock("../lib/world-store", () => ({ privacyActive: async () => privacy.on }));
 const apply = vi.fn(async (args: { deltas: unknown[] }) => args.deltas.map(() => ({ applied: true as const, item: "water bottle", from: 2, to: 1 })));
 vi.mock("../lib/fast-commit-repo", () => ({ applyTrackerDeltas: (args: { deltas: unknown[] }) => apply(args) }));
 
@@ -43,6 +43,8 @@ async function play(frames: Obj[][], query: string | ((i: number) => string), ob
 
 beforeEach(() => {
   apply.mockClear();
+  trackLive.mockClear();
+  privacy.on = false;
   queue.length = 0;
   (globalThis as { __worldstateFastCommit?: Map<string, unknown> }).__worldstateFastCommit?.clear();
 });
@@ -87,5 +89,82 @@ describe("POST /api/track/live/[observer]", () => {
     apply.mockRejectedValueOnce(new Error("graph down"));
     const { committed } = await play(reach(), "?place=table&viewer=the-leader");
     expect(committed).toEqual([{ applied: false, reason: "error" }]);
+  });
+
+  it("stops tracking and recording while privacy mode is on, and starts fresh afterwards", async () => {
+    claimLease("the-leader");
+    privacy.on = true;
+    const { last } = await play(reach(), "?place=table&viewer=the-leader");
+    expect((last.body as { privacy?: boolean }).privacy).toBe(true);
+    expect(trackLive).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
+    // After the window the interaction state is gone: half a reach played before is not carried over.
+    privacy.on = false;
+    await play(reach(), "?place=table&viewer=the-leader");
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps demo playback on its own sidecar session and out of the live fast-path state", async () => {
+    claimLease("the-leader");
+    await play(reach(), "?place=table");
+    expect(trackLive.mock.calls.every((call) => call[0] === "01:demo")).toBe(true);
+    const store = (globalThis as { __worldstateFastCommit?: Map<string, unknown> }).__worldstateFastCommit;
+    expect(store?.has("01") ?? false).toBe(false);
+    // A leader's reach is unaffected by demo frames interleaved with it.
+    const frames = reach();
+    for (const frame of frames) {
+      queue.push(frame);
+      await send("?place=table&viewer=the-leader");
+      queue.push([]);
+      await send("?place=table"); // demo frame in between
+    }
+    expect(trackLive.mock.calls.some((call) => call[0] === "01")).toBe(true);
+  });
+
+  it("refuses a body over the frame limit, declared or streamed, before processing it", async () => {
+    claimLease("the-leader");
+    const big = new Uint8Array(500_000);
+    const declared = await POST(
+      new Request("http://x/api/track/live/01?viewer=the-leader", { method: "POST", headers: { "content-length": String(big.length) }, body: big }),
+      { params: Promise.resolve({ observer: "01" }) } as never,
+    );
+    expect(declared.status).toBe(413);
+    const chunked = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (let i = 0; i < 6; i++) controller.enqueue(new Uint8Array(100_000));
+        controller.close();
+      },
+    });
+    const streamed = await POST(
+      new Request("http://x/api/track/live/01?viewer=the-leader", { method: "POST", body: chunked, duplex: "half" } as RequestInit),
+      { params: Promise.resolve({ observer: "01" }) } as never,
+    );
+    expect(streamed.status).toBe(413);
+    expect(trackLive).not.toHaveBeenCalled();
+  });
+
+  it("retries a failed commit with the next frame instead of losing the reach", async () => {
+    claimLease("the-leader");
+    apply.mockRejectedValueOnce(new Error("graph down"));
+    await play(reach(), "?place=table&viewer=the-leader");
+    expect(apply).toHaveBeenCalledTimes(1);
+    queue.push(one);
+    const retry = await send("?place=table&viewer=the-leader");
+    expect(apply).toHaveBeenCalledTimes(2);
+    expect(retry.body.committed).toHaveLength(1);
+    const second = apply.mock.calls[1][0] as unknown as { deltas: { label: string; before: number; after: number }[] };
+    expect(second.deltas).toEqual([expect.objectContaining({ label: "bottle", before: 2, after: 1 })]);
+    // Once it succeeded nothing is retried again.
+    queue.push(one);
+    await send("?place=table&viewer=the-leader");
+    expect(apply).toHaveBeenCalledTimes(2);
+  });
+
+  it("passes a guard that re-checks the capture lease at commit time", async () => {
+    claimLease("the-leader");
+    await play(reach(), "?place=table&viewer=the-leader");
+    const { guard } = apply.mock.calls[0][0] as unknown as { guard: () => boolean };
+    expect(typeof guard).toBe("function");
+    expect(guard()).toBe(true);
   });
 });
