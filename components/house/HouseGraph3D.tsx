@@ -112,6 +112,7 @@ export function HouseGraph3D() {
     let teardown = () => {};
     setSceneError(null);
     fitted.current = false;
+    autoFit.current = true;
     (async () => {
       const [{ default: ForceGraph3D }, { default: SpriteText }] = await Promise.all([
         import("3d-force-graph"),
@@ -172,7 +173,14 @@ export function HouseGraph3D() {
       fit();
       const observer = new ResizeObserver(fit);
       observer.observe(element);
+      // Whoever orbits, pans or zooms has chosen their view: stop re-framing it when the layout settles.
+      const takeOver = () => {
+        autoFit.current = false;
+      };
+      const touches = ["pointerdown", "wheel", "touchstart"] as const;
+      for (const type of touches) element.addEventListener(type, takeOver, { passive: true });
       teardown = () => {
+        for (const type of touches) element.removeEventListener(type, takeOver);
         observer.disconnect();
         graph.pauseAnimation();
         graph._destructor();

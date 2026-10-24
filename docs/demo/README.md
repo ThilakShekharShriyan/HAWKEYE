@@ -43,11 +43,27 @@ pipeline, and the screenshots and the answer came from the running app.
 
 ## Rebuilding the video
 
-`scripts/demo-video/` holds the tools; work files go to `$HK_VIDEO_DIR` (default `/tmp/hk-video`).
+`scripts/demo-video/` holds the tools. Everything they read and write lives under `$HK_VIDEO_DIR`
+(default `/tmp/hk-video`); `cards/` and `seg/` are created for you.
 
-- `shot.mjs`: screenshots a page in headless Chrome over CDP (sets cookies, clicks RUN in FalkorDB
-  Browser, waits for the 3D layout to settle).
-- `narration.json`: the voiceover script, voiced with ElevenLabs.
-- `cards.py`: renders title cards, captioned screenshots and clip side panels from HTML.
-- `build.py`: builds each scene with ffmpeg (slow push-in on slides; phone clips over a blurred copy)
-  and concatenates them. `python3 build.py first` builds the scenes before the take, `second` the rest.
+**Needs:** Python 3, ffmpeg and ffprobe, Node 20+, and Chrome or Chromium (found automatically,
+or set `CHROME_PATH` to its executable).
+
+**Inputs you supply**
+
+| Where | What |
+| --- | --- |
+| `$HK_VIDEO_DIR/clips/register.mov` | the phone clip of Thilak registering the table (or `--register FILE` / `HK_CLIP_REGISTER`) |
+| `$HK_VIDEO_DIR/clips/take.mov` | the phone clip of Arnav taking a bottle (or `--take FILE` / `HK_CLIP_TAKE`) |
+| `$HK_VIDEO_DIR/shots/` | screenshots of the running app: `01-house-before`, `02-falkor-household`, `03-falkor-table-registered`, `04-house-table`, `05-places-table`, `06-house-after-take`, `07-falkor-events` (`.png`) |
+| `$HK_VIDEO_DIR/vo/` | one voiceover per scene: `s1`…`s9` `.mp3`, plus `q.mp3` (the question) and `a.mp3` (the answer); the script is in `narration.json` |
+| `$HK_VIDEO_DIR/answer.json` | `{"question", "answer", "via", "latencyMs"}` from `/api/ask`, for the Q&A slide |
+
+**Tools**
+
+- `shot.mjs <url> <out.png> [waitMs] [cookies.json] [width] [height] [clickText]` screenshots a page in
+  headless Chrome over CDP (sets cookies, clicks RUN in FalkorDB Browser, waits for the 3D layout).
+- `cards.py static|post` renders title cards, captioned screenshots and clip side panels from HTML.
+- `build.py first` builds the scenes up to the Q&A, `build.py second` builds the rest and concatenates
+  them into `$HK_VIDEO_DIR/HAWKEYE-demo.mp4`. Slides push in slowly; phone clips sit over a blurred copy
+  of themselves; a voiceover that spans two slides continues across both.

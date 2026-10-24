@@ -94,7 +94,7 @@ export async function applyTrackerDeltas({
     const touched: string[] = [];
 
     for (const delta of deltas) {
-      let item = itemForLabel(working, delta.label);
+      const item = itemForLabel(working, delta.label);
       let from = item?.count ?? 0;
       let name = item?.name;
       const stored = working.some((i) => headNoun(i.name) === headNoun(delta.label));

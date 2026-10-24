@@ -1,7 +1,19 @@
 # Renders 1920x1080 slides (opaque) and side panels (transparent) as PNGs via headless Chrome.
 import json, os, subprocess, sys, html
 WORK = os.environ.get("HK_VIDEO_DIR", "/tmp/hk-video")
-CH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+def find_chrome():
+    """CHROME_PATH, else the first installed Chrome or Chromium."""
+    candidates = [os.environ.get("CHROME_PATH"), "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                  "/Applications/Chromium.app/Contents/MacOS/Chromium", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable",
+                  "/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium"]
+    for path in candidates:
+        if path and os.path.exists(path):
+            return path
+    sys.exit("Chrome not found: install Chrome or Chromium, or set CHROME_PATH to its executable.")
+
+CH = find_chrome()
+os.makedirs(f"{WORK}/cards", exist_ok=True)
 BASE="""<html><head><meta charset="utf-8"><style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{width:1920px;height:1080px;overflow:hidden;font-family:-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;color:#e8eaed;BG}

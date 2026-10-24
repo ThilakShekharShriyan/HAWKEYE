@@ -2,9 +2,25 @@
 // Screenshots a page in headless Chrome over CDP: sets cookies, dismisses "Not now" popups, waits, captures.
 import { spawn } from "node:child_process";
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
+
+// CHROME_PATH, else the first installed Chrome or Chromium.
+const chromePath = [
+  process.env.CHROME_PATH,
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  "/snap/bin/chromium",
+].find((path) => path && existsSync(path));
+if (!chromePath) {
+  console.error("Chrome not found: install Chrome or Chromium, or set CHROME_PATH to its executable.");
+  process.exit(1);
+}
 const [url, out, waitMs = "6000", cookieFile, width = "1600", height = "900", clickText] = process.argv.slice(2);
 const port = 9333 + Math.floor(Math.random() * 500);
-const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [
+const chrome = spawn(chromePath, [
   "--headless=new", `--remote-debugging-port=${port}`, `--user-data-dir=${process.env.HK_VIDEO_DIR ?? "/tmp/hk-video"}/chrome-${port}`,
   "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--hide-scrollbars",
   `--window-size=${width},${height}`, "about:blank",
