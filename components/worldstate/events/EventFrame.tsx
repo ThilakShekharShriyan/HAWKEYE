@@ -13,10 +13,10 @@ export function EventFrame({
   return (
     <li className="transition-opacity duration-700" style={{ opacity }}>
       <div className="event-enter grid grid-cols-[4.5rem_1.25rem_minmax(0,1fr)] gap-x-3">
-        <time className="pt-0.5 font-mono text-[11px] text-white/35 tabular-nums">
+        <time className="pt-0.5 font-mono text-[11px] text-ink/35 tabular-nums">
           {event.timestamp}
         </time>
-        <span className="pt-0.5 font-mono text-[10px] tracking-wide text-white/40">
+        <span className="pt-0.5 font-mono text-[10px] tracking-wide text-ink/40">
           {event.observerId}
         </span>
         <div className="min-w-0">{children}</div>

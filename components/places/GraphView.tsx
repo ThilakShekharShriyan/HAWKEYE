@@ -15,12 +15,12 @@ const TITLE: Record<GraphGroup, string> = {
 };
 
 const FILL: Record<GraphGroup, string> = {
-  observer: "#8eb6ff",
-  event: "#d7b4ff",
-  thing: "#f4f4f4",
-  slot: "#9aa3ad",
-  place: "#7dcea0",
-  kind: "#f0c36a",
+  observer: "#2f6fdb",
+  event: "#7c5cc4",
+  thing: "#0d1117",
+  slot: "#6b7280",
+  place: "#14946a",
+  kind: "#c48a12",
 };
 
 const COL_W = 210;
@@ -78,7 +78,7 @@ export function GraphView({ graph, focus }: { graph: WorldGraph; focus: string |
   }, [graph, focus]);
 
   if (graph.nodes.length === 0) {
-    return <p className="text-[13px] text-white/40">No nodes yet. Remember a place and it shows up here as its own node.</p>;
+    return <p className="text-[13px] text-ink/40">No nodes yet. Remember a place and it shows up here as its own node.</p>;
   }
 
   const byId = new Map(graph.nodes.map((node) => [node.id, node]));
@@ -96,13 +96,13 @@ export function GraphView({ graph, focus }: { graph: WorldGraph; focus: string |
     <div>
       <div className="mb-2 flex flex-wrap gap-3">
         {ORDER.map((group) => (
-          <span key={group} className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] text-white/45 uppercase">
+          <span key={group} className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] text-ink/45 uppercase">
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: FILL[group] }} />
             {TITLE[group]}
           </span>
         ))}
       </div>
-      <div className="overflow-x-auto rounded-md border border-white/[0.08] bg-black/30">
+      <div className="overflow-x-auto rounded-md border border-ink/[0.08] bg-panel/60">
         <svg
           viewBox={`0 0 ${layout.width} ${layout.height}`}
           width={layout.width}
@@ -116,7 +116,7 @@ export function GraphView({ graph, focus }: { graph: WorldGraph; focus: string |
               key={group}
               x={PAD_X + col * COL_W}
               y={16}
-              fill="rgba(255,255,255,0.35)"
+              fill="rgba(13,17,23,0.35)"
               fontSize={10}
               fontFamily="ui-monospace, monospace"
             >
@@ -140,7 +140,7 @@ export function GraphView({ graph, focus }: { graph: WorldGraph; focus: string |
                 <path
                   d={`M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`}
                   fill="none"
-                  stroke={hot ? "#ffffff" : "rgba(255,255,255,0.38)"}
+                  stroke={hot ? "#0d1117" : "rgba(13,17,23,0.38)"}
                   strokeWidth={hot ? 1.6 : 1}
                 />
                 {lit ? (
@@ -148,8 +148,8 @@ export function GraphView({ graph, focus }: { graph: WorldGraph; focus: string |
                     x={midX}
                     y={midY}
                     textAnchor="middle"
-                    fill="rgba(255,255,255,0.7)"
-                    stroke="#0b0d11"
+                    fill="rgba(13,17,23,0.7)"
+                    stroke="#ffffff"
                     strokeWidth={3}
                     paintOrder="stroke"
                     fontSize={8}
@@ -178,7 +178,7 @@ export function GraphView({ graph, focus }: { graph: WorldGraph; focus: string |
                   width={NODE_W}
                   height={NODE_H}
                   rx={7}
-                  fill={hot ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.45)"}
+                  fill={hot ? "rgba(13,17,23,0.14)" : "rgba(255,255,255,0.45)"}
                   stroke={FILL[node.group]}
                   strokeWidth={hot ? 2 : 1.25}
                   strokeDasharray={node.ghost ? "4 3" : undefined}
@@ -192,14 +192,14 @@ export function GraphView({ graph, focus }: { graph: WorldGraph; focus: string |
           })}
         </svg>
       </div>
-      <p className="mt-2 text-[12px] text-white/55">
+      <p className="mt-2 text-[12px] text-ink/55">
         {focus ? `This look is ${focus}. Other places stay on the graph, dimmed.` : "Every place is its own node."}
         {pickedNode ? ` Selected ${pickedNode.label}.` : ""}
       </p>
       {lines.length ? (
         <ul className="mt-1 flex flex-col gap-0.5">
           {lines.map((line) => (
-            <li key={line} className="font-mono text-[10px] text-white/45">
+            <li key={line} className="font-mono text-[10px] text-ink/45">
               {line}
             </li>
           ))}

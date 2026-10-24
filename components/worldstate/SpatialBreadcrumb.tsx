@@ -20,7 +20,7 @@ export function SpatialBreadcrumb({
               className={
                 tone === "overlay"
                   ? "px-1.5 text-[11px] text-white/35"
-                  : "px-1.5 text-[12px] text-white/25"
+                  : "px-1.5 text-[12px] text-ink/25"
               }
               aria-hidden
             >

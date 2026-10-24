@@ -62,7 +62,8 @@ for (const area of HOUSE.areas) {
         items,
         description,
         seed: "house",
-        lastSeen: now,
+        // lastSeen is left alone: bumping it would push places a camera saw since
+        // out of the recent candidates perception compares a sighting against.
       }, { watch: false });
     } else {
       await createPlace({

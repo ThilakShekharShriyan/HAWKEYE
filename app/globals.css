@@ -1,35 +1,73 @@
 @import "tailwindcss";
 
 :root {
-  --background: #08090b;
-  --foreground: #e8e8ea;
+  /* Light theme. "ink" is the text colour (classes like text-ink/40 step its opacity);
+     "paper" is the page and "panel" a raised surface. Camera feeds keep their own dark HUD. */
+  --background: #f6f7f9;
+  --foreground: #0d1117;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-ink: #08090b;
-  --color-panel: #0e1013;
-  --color-live: #e15b55;
-  --color-location: #7eb6c9;
-  --color-voice: #b3a4d6;
-  --color-memory: #6fbfb3;
-  --color-change: #c6a56a;
+  --color-ink: #0d1117;
+  --color-paper: #f6f7f9;
+  --color-panel: #ffffff;
+  --color-live: #d1433d;
+  --color-location: #2b7a99;
+  --color-voice: #6b5bb5;
+  --color-memory: #128a7b;
+  --color-change: #a87a1e;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
+  /* A faint dot grid with a soft glow at the top: a futuristic lab-bench feel on a light page. */
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(47, 111, 219, 0.1), transparent 70%),
+    radial-gradient(circle at 1px 1px, rgba(13, 17, 23, 0.075) 1px, transparent 0);
+  background-size: 100% 100%, 22px 22px;
+  background-attachment: fixed;
+}
+
+/* Animated ascii art (ascii.rest): one ink, small, decorative. */
+.ascii-art {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: pre;
+  color: var(--color-ink);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* A thin scanning line, for loading states. */
+@keyframes scan-sweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.scan-line {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(47, 111, 219, 0.12) 50%, transparent 100%);
+  animation: scan-sweep 2.4s linear infinite;
+  pointer-events: none;
 }
 
 .live-dot {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: #e15b55;
+  background: var(--color-live);
   animation: live-pulse 2.6s ease-in-out infinite;
 }
 
@@ -64,13 +102,13 @@ body {
 
 @keyframes milestone-settle {
   0% {
-    border-color: rgba(198, 165, 106, 0.1);
+    border-color: rgba(168, 122, 30, 0.12);
   }
   40% {
-    border-color: rgba(198, 165, 106, 0.34);
+    border-color: rgba(168, 122, 30, 0.4);
   }
   100% {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(13, 17, 23, 0.1);
   }
 }
 
@@ -164,7 +202,7 @@ body {
 
 .stream-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  scrollbar-color: rgba(13, 17, 23, 0.18) transparent;
 }
 
 .sensor-grain {
@@ -181,7 +219,8 @@ body {
   .plate-drift,
   .localizing,
   .live-dot,
-  .speech-overlay {
+  .speech-overlay,
+  .scan-line {
     animation: none;
     transition: none;
   }
@@ -192,7 +231,7 @@ body {
   display: inline-block;
   width: 10px;
   height: 10px;
-  border: 1.5px solid rgb(255 255 255 / 0.2);
+  border: 1.5px solid color-mix(in srgb, currentColor 25%, transparent);
   border-top-color: var(--color-memory);
   border-radius: 9999px;
   animation: spinner-turn 0.8s linear infinite;

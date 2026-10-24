@@ -21,6 +21,7 @@ import {
 } from "@/lib/inventory";
 import { generateJson, maxImages, isLiteModel } from "@/lib/llm";
 import { lookupPerception, rememberPerception } from "@/lib/perception-cache";
+import { anchoredFirst, MAX_CANDIDATES, withAnchoredPlace } from "@/lib/candidates";
 import { framesToStore, retention } from "@/lib/retention";
 import { liveTracks, remapTracks, trackEpisode, trackEvidence } from "@/lib/tracker";
 import { anchorHint, candidateLine, systemPrompt } from "@/lib/site-prompt";
@@ -29,6 +30,7 @@ import type { ObserverId } from "@/lib/types";
 import {
   createPlace,
   findPlace,
+  findPlaceByName,
   findRecentPlace,
   insertEpisode,
   listPlaceDocs,
@@ -43,7 +45,6 @@ const OBSERVER_IDS: ObserverId[] = ["01", "02"];
 const MIN_PASSIVE_CONFIDENCE = 0.8;
 const FRAME_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_REFERENCES = 3;
-const MAX_CANDIDATES = 6;
 const EPISODE_TIMEOUT_MS = 25000;
 
 type Reference = { image: string; at: Date; observerId: ObserverId };
@@ -297,7 +298,14 @@ async function perceive({
         frames.map((frame) => frame.at),
       );
 
-  const candidates = (await listPlaceDocs(MAX_CANDIDATES)).map((doc) => ({
+  const recent = await listPlaceDocs(MAX_CANDIDATES);
+  // The place the dashboard's anchor match names is always a candidate, however
+  // long ago it was last seen: the cap must not hide the very place in view. It
+  // takes one of the six slots, so the list never outgrows the identity letters.
+  const named = anchorName ? normName(anchorName) : null;
+  const anchoredPlace =
+    named && !recent.some((doc) => doc.name === named) ? await findPlaceByName(named) : null;
+  const candidates = withAnchoredPlace(recent, anchoredPlace).map((doc) => ({
     ...doc,
     items: withCounts(doc.items),
   }));
@@ -323,7 +331,7 @@ async function perceive({
   // A provider with an image limit gets the first and last frame, then one
   // reference photo per candidate; the candidate the dashboard's anchor match
   // points at goes first so its photo is the one kept.
-  candidates.sort((a, b) => Number(b.name === anchorName) - Number(a.name === anchorName));
+  candidates.splice(0, candidates.length, ...anchoredFirst(candidates, anchorName));
   const budget = imageBudget(
     maxImages(),
     candidates.map((candidate) => candidate.references?.length ?? 0),
