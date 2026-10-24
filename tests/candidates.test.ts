@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { anchoredFirst, MAX_CANDIDATES, withAnchoredPlace } from "../lib/candidates";
+import { anchoredFirst, candidatesFor, MAX_CANDIDATES, withAnchoredPlace } from "../lib/candidates";
+import { anchorHint } from "../lib/site-prompt";
 
 const place = (name: string) => ({ name });
 const newest = ["a", "b", "c", "d", "e", "f"].map(place);
@@ -36,3 +37,20 @@ describe("anchoredFirst", () => {
     expect(anchoredFirst(places, "garage")).toEqual(places);
   });
 });
+
+describe("candidatesFor", () => {
+  it("letters an older anchored place A in the hint, the same letter the prompt gives it", () => {
+    const names = candidatesFor(newest, place("table"), "  Table ").map((p) => p.name);
+    expect(names[0]).toBe("table");
+    expect(names).toHaveLength(MAX_CANDIDATES);
+    // The visual-match hint and the candidate list are built from the same order.
+    expect(anchorHint("table", names)).toContain("(candidate A)");
+  });
+
+  it("keeps the usual order when the anchored place is already a recent one", () => {
+    const names = candidatesFor(newest, place("d"), "d").map((p) => p.name);
+    expect(names).toEqual(["d", "a", "b", "c", "e", "f"]);
+    expect(anchorHint("d", names)).toContain("(candidate A)");
+  });
+});
+

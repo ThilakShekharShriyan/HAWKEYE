@@ -41,7 +41,7 @@ function WatchBadge({ watch, leader }: { watch: AnchorWatch; leader: boolean }) 
 
   return (
     <p
-      className={`mb-1.5 flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] uppercase ${active ? "text-change" : "text-white/55"}`}
+      className={`mb-1.5 flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] uppercase ${active ? "text-change-light" : "text-white/55"}`}
     >
       {watch.phase === "sending" || watch.phase === "loading" ? (
         <span className="spinner" aria-hidden />

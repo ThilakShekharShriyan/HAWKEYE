@@ -344,7 +344,7 @@ export function PhoneObserver({ observerId }: { observerId: ObserverId }) {
             className="mb-4 border border-white/10 bg-black/45 p-4 backdrop-blur-md"
           >
             <p
-              className={`flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] uppercase ${voice.state === "awake" ? "text-voice" : "text-white/60"}`}
+              className={`flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] uppercase ${voice.state === "awake" ? "text-voice-light" : "text-white/60"}`}
             >
               {voice.state === "awake" || voice.state === "speaking" ? (
                 <span className="live-dot" aria-hidden />
@@ -390,7 +390,7 @@ export function PhoneObserver({ observerId }: { observerId: ObserverId }) {
           <p className="mt-1 text-center text-[12px] text-white/45">{error}</p>
         ) : null}
         {micBlocked ? (
-          <p className="mt-1 text-center text-[12px] text-live">
+          <p className="mt-1 text-center text-[12px] text-live-light">
             Microphone blocked: allow it for this site in the browser settings, then reload, or “Hey Hawkeye” will not hear you.
           </p>
         ) : null}
