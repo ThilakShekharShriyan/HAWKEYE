@@ -171,15 +171,19 @@ Browser (`http://localhost:3010`) and `/house` in other windows.
 **Q1: the new shared place, whose phones saw it, what it holds**
 
 ```cypher
-MATCH (pl:Place {kind: 'container'}) WITH pl ORDER BY pl.lastSeen DESC LIMIT 1
-MATCH path = (:Person)-[:CARRIES]->(:Observer)-[:WATCHES]->(pl)-[:HOLDS]->(:Item)
-RETURN path
+MATCH (:Observer)-[:WATCHES]->(p:Place) WITH DISTINCT p ORDER BY p.lastSeen DESC LIMIT 1
+MATCH seen = (:Person)-[:CARRIES]->(:Observer)-[:WATCHES]->(p)
+OPTIONAL MATCH holds = (p)-[:HOLDS]->(:Item)
+RETURN seen, holds
 ```
+
+(The newest place a phone has actually watched, so reseeding cannot change which place it shows, and it still
+shows the place and both roommates after everything on it is gone. Or name it: `MATCH (p:Place {name: 'table'})`.)
 
 **Q2: what happened there, and whose phone saw it**
 
 ```cypher
-MATCH (pl:Place {kind: 'container'}) WITH pl ORDER BY pl.lastSeen DESC LIMIT 1
+MATCH (:Observer)-[:WATCHES]->(pl:Place) WITH DISTINCT pl ORDER BY pl.lastSeen DESC LIMIT 1
 MATCH (p:Person)-[:CARRIES]->(:Observer)-[:SAW]->(e:Event)
 WHERE pl.name IN e.location OR e.metaFrom = pl.name
 RETURN p.name AS who, e.title AS what, e.summary AS detail ORDER BY e.ts

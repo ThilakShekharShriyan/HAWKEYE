@@ -101,9 +101,9 @@ export async function seedHouseStructure() {
       `MATCH (h:House {id: $house})
        MERGE (p:Person {id: $id}) SET p.name = $name
        MERGE (p)-[:LIVES_IN]->(h)
-       MERGE (o:Observer {id: $observer})
+       MERGE (o:Observer {id: $observer}) SET o.name = $phone
        MERGE (p)-[:CARRIES]->(o)`,
-      { house: HOUSE.id, id: person.id, name: person.name, observer: person.observer },
+      { house: HOUSE.id, id: person.id, name: person.name, observer: person.observer, phone: `${person.name}'s phone` },
     );
   }
   const [a, b] = HOUSE.people;

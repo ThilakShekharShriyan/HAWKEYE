@@ -47,6 +47,8 @@ export function HouseGraph3D() {
   const mount = useRef<HTMLDivElement>(null);
   const graphRef = useRef<{ graphData: (data: unknown) => unknown; zoomToFit: (ms?: number, padding?: number) => unknown } | null>(null);
   const fitted = useRef(false);
+  // Frame the whole house whenever the layout settles, until someone picks a node.
+  const autoFit = useRef(true);
   const lastJson = useRef("");
   const [data, setData] = useState<HouseGraph | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -150,10 +152,14 @@ export function HouseGraph3D() {
         })
         .onNodeClick((node: object) => {
           const n = node as GraphNode;
+          autoFit.current = false;
           setPicked(n.id);
           const at = { x: n.x ?? 0, y: n.y ?? 0, z: n.z ?? 0 };
           const ratio = 1 + 90 / (Math.hypot(at.x, at.y, at.z) || 1);
           graph.cameraPosition({ x: at.x * ratio, y: at.y * ratio, z: at.z * ratio }, at, 900);
+        })
+        .onEngineStop(() => {
+          if (autoFit.current) graph.zoomToFit(600, 40);
         })
         .onBackgroundClick(() => setPicked(null));
       // Spread the layout: stronger repulsion and link lengths by relationship.
