@@ -9,7 +9,7 @@ const jpeg = (image: string) => (image.startsWith("data:") ? image : `data:image
 const stamp = (date: Date) =>
   `${new Date(date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} ${formatClock(new Date(date))}`;
 
-// Every tracked place with the pictures WORLDSTATE holds for it: the
+// Every tracked place with the pictures HAWKEYE holds for it: the
 // reference photos used to tell it apart from other places, the saved visual
 // anchor (embeddings of views, which start capture when matched) and the
 // frames of its most recent episodes.

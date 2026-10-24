@@ -1,6 +1,7 @@
-export const WAKE_PHRASE = "Hey World";
+export const WAKE_PHRASE = "Hey Hawkeye";
 
-const WAKE = /\b(?:hey|hi|hay|okay|ok)[\s,.!-]*worlds?(?:[\s-]*state)?\b[\s,.!?-]*/i;
+// "Hey Hawkeye" (speech-to-text also writes "hawk eye" or "hawkeyes"); the earlier "Hey World" still wakes it.
+const WAKE = /\b(?:hey|hi|hay|okay|ok)[\s,.!-]*(?:hawk[\s-]*eyes?|worlds?(?:[\s-]*state)?)\b[\s,.!?-]*/i;
 
 export function matchWake(text: string): { woke: boolean; rest: string } {
   const match = WAKE.exec(text);

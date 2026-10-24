@@ -32,15 +32,15 @@ type Decision = {
   anchor?: string | null;
 };
 
-const SYSTEM = `You are WORLDSTATE, a spatial memory assistant worn by a person as a phone camera.
-The user spoke to you after saying the wake phrase "Hey World".
+const SYSTEM = `You are HAWKEYE, a spatial memory assistant worn by a person as a phone camera.
+The user spoke to you after saying the wake phrase "Hey Hawkeye".
 You receive: their utterance, an optional photo of what their camera sees right now, and memories retrieved from earlier observations.
 
 Classify the utterance:
 - "remember": they ask you to remember/note something. Put a clean standalone fact in "memory" (include objects, places, people; resolve "this"/"here" using the photo). "answer" is a short confirmation.
   If what they want remembered is a place, landmark, container or fixed object the camera is looking at right now ("register this", "register this fridge", "remember this fridge", "remember this place", "remember this spot", "remember where I am", "remember my wardrobe", "this is the garage fridge", "this is Thilak's desk"), also set "anchor" to a short lowercase name for it, using their words when they give one ("garage fridge") and otherwise what the photo shows ("fridge", "wardrobe", "pantry shelf", "front door", "whiteboard corner", "sofa"); otherwise "anchor" is null. "remember this place" with no name gets the most recognisable fixed thing in the photo as its name, never "place". "register this" always counts as "remember". A bare "remember this" while the camera looks at a table, desk, shelf, counter or fridge is such a request: name it from the photo ("table").
   If what they want remembered is a movable thing the photo shows resting somewhere ("remember my laptop", "remember where I put my keys", or a bare "remember this" while the camera looks at a laptop on a chair), the place it rests on is what must be watched: set "anchor" to that place ("chair", "sofa", "side table"), so that it is tracked and its being taken is noticed. "memory" then says whose thing it is and where it is ("Thilak's laptop is on the chair in the lounge"). Whenever a photo is attached to a "remember" request, "anchor" is null only if nothing in the photo is a place or a thing resting on one (a pure fact such as "remember the wifi password is …").
-  When "anchor" is set and the request was about the place itself, "memory" says what the site is and where ("There is a wooden table in the office that WORLDSTATE watches"), never what is on or in it right now: contents change and are tracked separately.
+  When "anchor" is set and the request was about the place itself, "memory" says what the site is and where ("There is a wooden table in the office that HAWKEYE watches"), never what is on or in it right now: contents change and are tracked separately.
 - "ignore": they ask you not to record / forget / go private. "answer" is a short confirmation.
 - "question": anything else. When REGISTERED PLACES photos are attached, first compare the current photo with each reference photo. Only if the current photo is mainly a view of that same physical place or object, say its name ("You're at the whiteboard corner") for "where am I", "what place is this" or "what am I looking at". Being in the same room, or having only an edge of it in frame, is not a match: then say what the photo actually shows, that it is not a place you were asked to remember, and, if a remembered place is partly visible, that it is next to it. Never name a remembered place just because it is the only one you know. Answer using the current world state, the photo and memories. For what is in or on a site (table, fridge, shelf) the world state is the truth, wherever the person is standing now: "coke can ×2" means two; an item not listed is not there now, so "how many" is zero, even if memories mention it; a "taken" or "gone from" event means it left. Answer "how many … are left" with the number from the world state and, when the last change explains it, who was seen taking one and when. Mention which observer last changed or checked something and when, if useful. If you do not know, say so briefly.
 
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as AskBody;
   const text = body.text?.trim();
   if (!text || !hasWords(text)) {
-    return Response.json({ error: "Say a full question after \u201cHey World\u201d." }, { status: 400 });
+    return Response.json({ error: "Say a full question after \u201cHey Hawkeye\u201d." }, { status: 400 });
   }
   if (!body.observerId || !isObserverId(body.observerId)) {
     return Response.json({ error: "unknown observer" }, { status: 404 });
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     return await answer(observerId, text, body.image, started);
   } catch (cause) {
     // Return JSON rather than the framework's HTML 500 so the phone can speak
-    // a short failure message instead of "couldn't reach WORLDSTATE".
+    // a short failure message instead of "couldn't reach HAWKEYE".
     console.error("/api/ask failed", cause);
     log("ask", "failed", { observer: observerId, text, error: errorText(cause) });
     return Response.json(

@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function ObserveIndex() {
   return (
     <main className="flex h-dvh flex-col justify-center gap-3 bg-ink p-6 text-foreground">
-      <p className="mb-6 text-[13px] tracking-[0.22em] text-white">WORLDSTATE</p>
+      <p className="mb-6 text-[13px] tracking-[0.22em] text-white">HAWKEYE</p>
       {(["01", "02"] as const).map((id) => (
         <Link
           key={id}

@@ -41,7 +41,7 @@ async function post(path: string, body: unknown) {
 
 const register = await post("/api/ask", {
   observerId: "01",
-  text: `Hey World, remember this ${site}`,
+  text: `Hey Hawkeye, remember this ${site}`,
   image: image(before),
 });
 console.log(`1. register  ${register.status} ${register.ms}ms  anchor=${register.json.anchor}  "${register.json.answer}"`);
@@ -82,6 +82,6 @@ console.log(`   inventory ${JSON.stringify(episode.json.inventory)}`);
 
 const question = await post("/api/ask", {
   observerId: "01",
-  text: `Hey World, how many ${item}s are left ${site === "fridge" ? "in" : "on"} the ${site}?`,
+  text: `Hey Hawkeye, how many ${item}s are left ${site === "fridge" ? "in" : "on"} the ${site}?`,
 });
 console.log(`3. question  ${question.status} ${question.ms}ms  "${question.json.answer}"`);

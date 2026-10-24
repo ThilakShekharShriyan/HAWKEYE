@@ -49,7 +49,7 @@ export function WorldState() {
             emptyHint={
               demoMode
                 ? "Waiting for spatial observations..."
-                : "Say \u201cHey World\u201d on an observer phone to ask or remember something."
+                : "Say \u201cHey Hawkeye\u201d on an observer phone to ask or remember something."
             }
           />
           {demoMode ? null : (

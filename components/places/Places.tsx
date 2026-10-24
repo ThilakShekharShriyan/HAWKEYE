@@ -303,7 +303,7 @@ export function Places() {
     <div className="flex h-dvh flex-col overflow-hidden bg-ink text-foreground">
       <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-white/[0.08] px-5 sm:px-7">
         <div>
-          <h1 className="text-[15px] font-medium tracking-[0.22em] text-white">WORLDSTATE</h1>
+          <h1 className="text-[15px] font-medium tracking-[0.22em] text-white">HAWKEYE</h1>
           <p className="mt-1 text-[12px] text-white/45">Tracked places · timeline and logs</p>
         </div>
         <Link href="/" className="text-[11px] tracking-[0.16em] text-white/60 hover:text-white">
@@ -321,7 +321,7 @@ export function Places() {
           ) : null}
           {body && places.length === 0 ? (
             <p className="px-2 text-[13px] leading-5 text-white/40">
-              Nothing tracked yet. Point a phone at a place and say “Hey World, remember this place”.
+              Nothing tracked yet. Point a phone at a place and say “Hey Hawkeye, remember this place”.
             </p>
           ) : null}
           <ul className="flex flex-col gap-1">
@@ -503,7 +503,7 @@ export function Places() {
                 <p className="text-[13px] text-white/65">
                   {current.anchor
                     ? `${current.anchor.views} embedded views, updated ${current.anchor.updatedAt}`
-                    : "None saved. Say “Hey World, remember this place” while looking at it."}
+                    : "None saved. Say “Hey Hawkeye, remember this place” while looking at it."}
                 </p>
               </div>
             </div>

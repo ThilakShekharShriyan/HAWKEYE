@@ -6,7 +6,7 @@ import { formatDuration, goingOff, shoppingList } from "@/lib/trends";
 import { loadTrends } from "@/lib/trends-repo";
 import { countAnchors } from "@/lib/world-store";
 
-// Everything WORLDSTATE currently holds, for the dashboard's memory panel:
+// Everything HAWKEYE currently holds, for the dashboard's memory panel:
 // each site and its counted contents, the latest changes, what people asked
 // it to remember, and the usage trends worked out from the change history.
 export async function GET() {

@@ -60,7 +60,7 @@ function Empty({ children }: { children: string }) {
 }
 
 /**
- * What WORLDSTATE holds right now: sites and their counted contents, the
+ * What HAWKEYE holds right now: sites and their counted contents, the
  * latest changes, trends and remembered facts. Refetches whenever a new event
  * arrives on the stream (`revision`) and on a slow timer.
  */
@@ -111,7 +111,7 @@ export function MemoryPanel({ revision }: { revision: string }) {
       <div className="stream-scroll min-h-0 flex-1 overflow-y-auto px-6 pt-3 pb-8">
         <Heading count={state?.sites.length}>Sites</Heading>
         {state && state.sites.length === 0 ? (
-          <Empty>Nothing registered yet. Point a phone at a table and say “Hey World, remember this”.</Empty>
+          <Empty>Nothing registered yet. Point a phone at a table and say “Hey Hawkeye, remember this”.</Empty>
         ) : null}
         <ul className="flex flex-col gap-4">
           {state?.sites.map((site) => (
