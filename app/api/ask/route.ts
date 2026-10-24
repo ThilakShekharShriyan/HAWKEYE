@@ -3,6 +3,7 @@ import { askAnswerAgent, hasAnswerAgent, isAboutTheView, isStoredStateQuestion }
 import { hasBrightData, searchShopping } from "@/lib/bright-data";
 import { episodesSettled, outstanding } from "@/lib/episode-queue";
 import { insertEvent } from "@/lib/events-repo";
+import { findPlaceByName } from "@/lib/world-store";
 import { generateJson, hasModel, maxImages, MISSING_KEY_MESSAGE, provider } from "@/lib/llm";
 import { errorText, log } from "@/lib/log";
 import { retrieveMemories } from "@/lib/memory";
@@ -260,6 +261,7 @@ async function answer(
     // into episodic and semantic records in the background.
     void recordTurn({ observerId, role: "user", content: text });
     let registrationFailed = false;
+    let registrationSkipped: string | undefined;
     if (decision.intent === "remember" && image && anchor) {
       const registration = await perceiveEpisode({
         observerId,
@@ -277,9 +279,16 @@ async function answer(
         skipped: registration?.skipped,
         failed: registration === null,
       });
-      const registered = Boolean(registration?.container) && registration?.skipped === undefined;
+      registrationSkipped = registration?.skipped;
+      // A "stale" result still names a place a newer sighting committed. A thrown
+      // error can land after the place was written, so look it up before giving up.
+      const registered = registration
+        ? Boolean(registration.container) && (registration.skipped === undefined || registration.skipped === "stale")
+        : Boolean(await findPlaceByName(anchor).catch(() => null));
       if (registration === null) {
-        decision.answer = "I couldn't register that place just now. Please try again in a moment.";
+        decision.answer = registered
+          ? `Registered as the ${anchor}, but not everything saved. Say it again to be sure.`
+          : "I couldn't register that place just now. Please try again in a moment.";
       } else if (registration.skipped === "privacy") {
         decision.answer = "Privacy mode is on, so I didn't register that place.";
       } else if (registration.skipped === "unsure") {
@@ -304,6 +313,15 @@ async function answer(
         summary: `Q: ${text} A: ${decision.answer}`,
         metadata: { question: text, latencyMs },
       });
+      // The place did not register, but the fact the user asked to keep still
+      // counts (not in privacy mode); without the anchor-request, since no place exists.
+      if (decision.intent === "remember" && decision.memory && registrationSkipped !== "privacy") {
+        void rememberFact({
+          label: anchor ?? decision.memory.slice(0, 60),
+          text: decision.memory,
+          observerId,
+        });
+      }
     } else if (decision.intent === "remember" && decision.memory) {
       void rememberFact({
         label: anchor ?? decision.memory.slice(0, 60),
