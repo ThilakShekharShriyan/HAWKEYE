@@ -437,6 +437,9 @@ async function perceive({
   const changes: string[] = [];
   let identity: "known" | "new" | undefined;
   let pictured: { name: string; count: number }[] | null = null;
+  // False when the picture is a partial view catalogued by an explicit registration:
+  // what is out of frame was not seen to be gone, so the scene must not drop it.
+  let pictureFull = true;
   let name = current?.name;
   // "Remember this" and the watcher's first episode can both find no site and
   // each create one under a different name; the later of the two defers.
@@ -472,9 +475,10 @@ async function perceive({
       base,
       candidates.map((c) => c.name),
     );
-    // Only a full view is a complete inventory; a partial first look leaves
-    // the contents unseen until a full one arrives.
-    const complete = Boolean(after) && !partial;
+    // A passive first look must be a full view to count as an inventory. An
+    // explicit "remember this" counts what is in view even when the edges are
+    // cut off (a table never fits the frame); later full views correct it.
+    const complete = Boolean(after) && (!partial || Boolean(register));
     const items: Item[] = (complete ? (after ?? []) : []).map((item) => ({ ...item, since: now, by: observerId }));
     const mark = placeMark(perceived.observed);
     const doc: ContainerDoc = {
@@ -494,6 +498,7 @@ async function perceive({
     doc.description = describe(doc);
     await createPlace(doc);
     pictured = complete ? items : null;
+    pictureFull = !partial;
     await insertEvent({
       type: "observation",
       observerId,
@@ -529,10 +534,11 @@ async function perceive({
     }
     const location = $set.place ? [$set.place, current.name] : [current.name];
 
-    if (after && !partial && current.catalogued === false) {
+    if (after && (!partial || Boolean(register)) && current.catalogued === false) {
       const items: Item[] = after.map((item) => ({ ...item, since: now, by: observerId }));
       Object.assign($set, { items, catalogued: true });
       pictured = items;
+      pictureFull = !partial;
       await insertEvent({
         type: "observation",
         observerId,
@@ -622,7 +628,7 @@ async function perceive({
       marks: endMarks(pictured, layout, shape),
       observerId,
       at: now.getTime(),
-      full: true,
+      full: pictureFull,
     });
   } else if (name && !unsure && layout.length > 0) {
     await applyScene({
