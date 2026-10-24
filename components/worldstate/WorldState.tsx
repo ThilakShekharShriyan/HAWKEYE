@@ -30,7 +30,7 @@ export function WorldState() {
   const streams = usePhoneStreams();
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-paper text-foreground">
+    <div className="flex h-dvh flex-col overflow-hidden text-foreground">
       <Header
         clock={clock}
         latency={latency}

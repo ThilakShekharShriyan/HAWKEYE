@@ -3,7 +3,7 @@ import { AsciiArt } from "@/components/ascii/AsciiArt";
 
 export default function ObserveIndex() {
   return (
-    <main className="flex h-dvh flex-col justify-center gap-3 bg-paper p-6 text-foreground">
+    <main className="flex h-dvh flex-col justify-center gap-3 p-6 text-foreground">
       <AsciiArt piece="radar" size={4} opacity={0.55} className="mb-2" />
       <p className="mb-6 text-[13px] tracking-[0.22em] text-ink">HAWKEYE</p>
       {(["01", "02"] as const).map((id) => (

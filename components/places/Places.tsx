@@ -301,7 +301,7 @@ export function Places() {
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-paper text-foreground">
+    <div className="flex h-dvh flex-col overflow-hidden text-foreground">
       <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-ink/[0.08] px-5 sm:px-7">
         <div>
           <h1 className="text-[15px] font-medium tracking-[0.22em] text-ink">HAWKEYE</h1>
