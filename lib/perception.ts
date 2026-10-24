@@ -61,7 +61,8 @@ export type ContainerDoc = {
   /** Photos used to tell this site apart from similar ones. */
   references?: Reference[];
   /** The most recent change to the contents, for "who took the …" questions. */
-  lastChange?: { summary: string; by: ObserverId; at: Date };
+  /** `items` and `source` let the tracker's fast path tell an episode's change to the same item from its own. */
+  lastChange?: { summary: string; by: ObserverId; at: Date; items?: string[]; source?: "episode" | "tracker" };
   description: string;
   /** Stable sentence that separates this site from another of the same kind. */
   mark?: string;
@@ -132,7 +133,7 @@ export type EpisodeResult = {
 
 const containerKey = (name: string) => `container:${normName(name)}`;
 
-function describe(site: Pick<ContainerDoc, "name" | "place" | "items" | "catalogued">) {
+export function describe(site: Pick<ContainerDoc, "name" | "place" | "items" | "catalogued">) {
   const where = site.place ? ` in the ${site.place}` : "";
   if (site.catalogued === false) return `The ${site.name}${where}; contents not seen yet.`;
   return `The ${site.name}${where} holds: ${formatItems(site.items)}.`;
@@ -222,7 +223,7 @@ function candidateParts(candidates: ContainerDoc[], refs?: number[]) {
 const lockStore = globalThis as typeof globalThis & { __worldstateWriteLock?: Promise<void> };
 
 /** Resolves when earlier episodes have finished writing; call the result to let the next one in. */
-async function acquireWriteLock() {
+export async function acquireWriteLock() {
   const previous = lockStore.__worldstateWriteLock ?? Promise.resolve();
   let release = () => {};
   lockStore.__worldstateWriteLock = new Promise<void>((resolve) => {
@@ -612,6 +613,8 @@ async function perceive({
           summary: deltas.map(formatDelta).join(", ") + (takers.length ? `, taken by ${takers.join(" and ")}` : ""),
           by: observerId,
           at: now,
+          items: deltas.map((d) => d.name),
+          source: "episode",
         };
       }
     }

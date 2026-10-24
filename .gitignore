@@ -43,3 +43,8 @@ next-env.d.ts
 
 # debugging trail (lib/log.ts)
 /logs
+
+# Tracker sidecar
+/tracker/.venv/
+/tracker/__pycache__/
+/public/videos/*.mp4

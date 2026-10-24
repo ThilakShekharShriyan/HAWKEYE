@@ -5,6 +5,7 @@ import { hasBrightData } from "@/lib/bright-data";
 import { graphStatus } from "@/lib/graph";
 import { groqKeyCount } from "@/lib/groq";
 import { hasModel, provider } from "@/lib/llm";
+import { trackerStatus } from "@/lib/tracker";
 
 export async function GET() {
   await connection();
@@ -20,6 +21,7 @@ export async function GET() {
       answerAgent: hasAnswerAgent() ? "trueforge" : "in-process",
       brightData: hasBrightData(),
       groqKeys: groqKeyCount(),
+      tracker: await trackerStatus(),
     });
   } catch (error) {
     return Response.json(
