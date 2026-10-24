@@ -66,6 +66,22 @@ checkpoint's latest state, not from a guess.
 A dashboard on a laptop shows every observer's camera, a live feed of what
 changed, and a page for each checkpoint with its history.
 
+## Run it with TrueForge
+
+```bash
+npm run db:up              # FalkorDB on :6390, browser on :3010
+npm run seed:demo          # a shared house: fridge and snack shelf, who took what
+npm run trueforge          # TrueForge harness, UI on :8790 (separate terminal)
+npm run mcp:falkor         # FalkorDB MCP over HTTP on :3005 (separate terminal)
+npm run trueforge:setup    # registers the OpenAI model, the MCP server and the agent
+# in .env.local: OPENAI_API_KEY, OPENAI_MODEL=gpt-5.5, TRUEFORGE_AGENT=1
+npx next dev -p 3100
+```
+
+Ask: `curl -X POST localhost:3100/api/ask -H 'content-type: application/json' -d '{"observerId":"01","text":"Hey World, who took the last coke?"}'`.
+Each question opens a TrueForge session, so it shows up in the harness UI.
+
+
 ## What you can ask
 
 - "How many eggs are left?"
