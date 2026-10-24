@@ -472,9 +472,10 @@ async function perceive({
       base,
       candidates.map((c) => c.name),
     );
-    // Only a full view is a complete inventory; a partial first look leaves
-    // the contents unseen until a full one arrives.
-    const complete = Boolean(after) && !partial;
+    // A passive first look must be a full view to count as an inventory. An
+    // explicit "remember this" counts what is in view even when the edges are
+    // cut off (a table never fits the frame); later full views correct it.
+    const complete = Boolean(after) && (!partial || Boolean(register));
     const items: Item[] = (complete ? (after ?? []) : []).map((item) => ({ ...item, since: now, by: observerId }));
     const mark = placeMark(perceived.observed);
     const doc: ContainerDoc = {
@@ -529,7 +530,7 @@ async function perceive({
     }
     const location = $set.place ? [$set.place, current.name] : [current.name];
 
-    if (after && !partial && current.catalogued === false) {
+    if (after && (!partial || Boolean(register)) && current.catalogued === false) {
       const items: Item[] = after.map((item) => ({ ...item, since: now, by: observerId }));
       Object.assign($set, { items, catalogued: true });
       pictured = items;
