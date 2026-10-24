@@ -3,9 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { SpatialBreadcrumb } from "@/components/worldstate/SpatialBreadcrumb";
 import { SpeechOverlay } from "@/components/worldstate/SpeechOverlay";
+import { TrackOverlay, trackKey } from "@/components/worldstate/TrackOverlay";
 import { VoiceMirror } from "@/components/worldstate/VoiceMirror";
 import type { Observer, VoiceSnapshot } from "@/lib/types";
+import { clog } from "@/lib/client-log";
+import type { LiveObject } from "@/lib/tracker";
 import { useAnchorWatch, type AnchorWatch } from "@/lib/use-anchor-watch";
+import { useLiveTracks, type PlaceHint } from "@/lib/use-live-tracks";
 
 function WatchBadge({ watch, leader }: { watch: AnchorWatch; leader: boolean }) {
   const subject = watch.resolved ?? (watch.anchor?.active ? watch.anchor.name : (watch.site ?? "site"));
@@ -80,7 +84,9 @@ export function CameraFeed({
   clock: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const source = stream ? `stream:${stream.id}` : `file:${observer.videoUrl}`;
+  // Only the demo (no capture state) plays a file; a live dashboard waits for a phone.
+  const demo = capture === undefined;
+  const source = stream ? `stream:${stream.id}` : demo ? `file:${observer.videoUrl}` : "idle";
   const [readySource, setReadySource] = useState<string | null>(null);
   const ready = readySource === source;
   const watch = useAnchorWatch({
@@ -91,6 +97,39 @@ export function CameraFeed({
     viewer: capture?.viewer ?? "",
   });
 
+  // Boxes, IDs and trails for people and portable things. Only the tab that
+  // captures sends frames (two tabs would feed one tracker interleaved); the
+  // demo, which has no capture state, plays a file and tracks that.
+  const placeHint = useRef<PlaceHint | null>(null);
+  useEffect(() => {
+    if (watch?.anchor?.active) placeHint.current = { name: watch.anchor.name, at: Date.now() };
+  }, [watch?.anchor]);
+  const tracks = useLiveTracks({
+    videoRef,
+    observerId: observer.id,
+    place: placeHint,
+    viewer: capture?.viewer,
+    // The leader tab sends frames; any other tab with the stream follows its results.
+    enabled: ready && (stream ? true : capture === undefined),
+    follow: Boolean(stream) && !capture?.leader,
+  });
+  const [marked, setMarked] = useState<ReadonlySet<string>>(new Set());
+  const toggleMark = (object: LiveObject, nowMarked: boolean) => {
+    const key = trackKey(object);
+    setMarked((current) => {
+      const next = new Set(current);
+      if (nowMarked) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+    clog("tracks", nowMarked ? "marked" : "unmarked", { observer: observer.id, object: key });
+    fetch("/api/track/mark", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ observerId: observer.id, label: object.label, id: object.id, marked: nowMarked }),
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -98,12 +137,17 @@ export function CameraFeed({
     if (stream) {
       video.removeAttribute("src");
       video.srcObject = stream;
-    } else {
+    } else if (demo) {
       video.srcObject = null;
       video.src = observer.videoUrl;
+    } else {
+      // Live dashboard with no phone connected: show the idle plate, not a file.
+      video.srcObject = null;
+      video.removeAttribute("src");
+      video.load();
     }
     video.play()?.catch(() => {});
-  }, [stream, observer.videoUrl]);
+  }, [stream, observer.videoUrl, demo]);
 
   const showBreadcrumb =
     observer.phase === "locked" && observer.breadcrumb.length > 0;
@@ -167,6 +211,17 @@ export function CameraFeed({
             vectorEffect="non-scaling-stroke"
           />
         </svg>
+      ) : null}
+
+      {tracks.status === "tracking" && tracks.frameSize ? (
+        <>
+          <TrackOverlay objects={tracks.objects} frameSize={tracks.frameSize} marked={marked} onToggle={toggleMark} />
+          <p className="pointer-events-none absolute top-14 left-4 z-20 font-mono text-[10px] tracking-[0.16em] text-white/55 uppercase">
+            Tracking {tracks.objects.length} object{tracks.objects.length === 1 ? "" : "s"}
+            {tracks.ms !== null ? ` · ${tracks.ms} ms` : ""}
+            {marked.size > 0 ? ` · ${marked.size} marked` : ""}
+          </p>
+        </>
       ) : null}
 
       <SpeechOverlay speech={observer.speech} />
