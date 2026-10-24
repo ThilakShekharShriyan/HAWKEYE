@@ -178,22 +178,21 @@ const SCOPED = [
 /** The house as nodes and links for the 3D view. */
 export async function readHouseGraph(): Promise<HouseGraph> {
   const params = { house: HOUSE.id, limit: MAX_CAMERA_SITES };
-  const [structure, cameraSites, cameraHolds] = await Promise.all([
+  const [structure, cameraSites] = await Promise.all([
     Promise.all(SCOPED.map((pattern) => cypher<Row>(`MATCH ${pattern} RETURN ${COLUMNS}`, params))),
-    // Camera-made places no area claims, with or without anything in them.
+    // One bounded, ordered set of camera-made places no area claims (most recently
+    // seen first), with or without anything in them. Their items come from this
+    // same set, so a drawn site and its inventory can never come from different picks.
     cypher<Row>(
       `MATCH (p:Place {kind: 'container'}) WHERE NOT ()-[:HAS_SITE]->(p)
-       RETURN p.key AS key, p.name AS name LIMIT $limit`,
-      params,
-    ),
-    cypher<Row>(
-      `MATCH (a:Place {kind: 'container'}) WHERE NOT ()-[:HAS_SITE]->(a)
-       WITH a LIMIT $limit
-       MATCH (a)-[r:HOLDS]->(b:Item)
-       RETURN ${COLUMNS}`,
+       RETURN p.key AS key, p.name AS name ORDER BY p.lastSeen DESC, p.key LIMIT $limit`,
       params,
     ),
   ]);
+  const cameraKeys = cameraSites.map((row) => str(row.key)).filter(Boolean);
+  const cameraHolds = cameraKeys.length
+    ? await cypher<Row>(`MATCH (a:Place) WHERE a.key IN $keys MATCH (a)-[r:HOLDS]->(b:Item) RETURN ${COLUMNS}`, { keys: cameraKeys })
+    : [];
 
   const nodes = new Map<string, HouseNode>();
   const links: HouseLink[] = [];

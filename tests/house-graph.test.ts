@@ -74,4 +74,24 @@ describe("house graph", () => {
     const { nodes } = await mod.readHouseGraph();
     expect(nodes.some((n) => n.id === "person:stranger" || n.id === "area:attic" || n.id === "house:other")).toBe(false);
   });
+
+  it("draws each camera site with its own items when there are more places than the cap", async () => {
+    // 105 unclaimed places, each holding one item; the view takes the 100 most recently seen, all with their links.
+    await graph.cypher(`UNWIND range(1, 105) AS i
+      CREATE (p:Place {key: 'container:cap-' + toString(i), kind: 'container', name: 'cap ' + toString(i), lastSeen: 1000 + i})
+      MERGE (it:Item {name: 'thing ' + toString(i)})
+      CREATE (p)-[:HOLDS {count: 1}]->(it)`);
+    const { nodes, links } = await mod.readHouseGraph();
+    // Other tests' unclaimed places (empty shelf, snack table) are in the graph too and count against the cap.
+    const unclaimed = links.filter((l) => l.type === "HAS_SITE" && l.source === "house:home").map((l) => l.target);
+    expect(unclaimed).toHaveLength(100);
+    for (const site of nodes.filter((n) => n.id.startsWith("site:container:cap-"))) {
+      expect(unclaimed).toContain(site.id);
+      expect(links.some((l) => l.type === "HOLDS" && l.source === site.id)).toBe(true);
+    }
+    // The oldest are the ones left out, with their items.
+    expect(nodes.some((n) => n.id === "site:container:cap-1")).toBe(false);
+    expect(nodes.some((n) => n.id === "item:thing 1")).toBe(false);
+    expect(nodes.some((n) => n.id === "site:container:cap-105")).toBe(true);
+  });
 });
