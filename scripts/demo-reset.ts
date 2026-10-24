@@ -5,6 +5,8 @@ import { applyReset, planReset } from "../lib/demo-reset.ts";
 
 const plan = await planReset();
 console.log(`camera-made places: ${plan.places.length ? plan.places.join(", ") : "none"}`);
+console.log(`seeded sites with camera photos to clear: ${plan.seededWithPhotos.length ? plan.seededWithPhotos.join(", ") : "none"}`);
+console.log(`active privacy windows to clear: ${plan.activePrivacy}`);
 console.log(`events (seeded samples kept): ${plan.events}`);
 console.log(`memory and caches: ${Object.entries(plan.memory).map(([label, n]) => `${label} ${n}`).join(", ")}`);
 if (!process.argv.includes("--yes")) {

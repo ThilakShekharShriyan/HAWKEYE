@@ -63,7 +63,7 @@ for (const area of HOUSE.areas) {
         description,
         seed: "house",
         lastSeen: now,
-      });
+      }, { watch: false });
     } else {
       await createPlace({
         key,
@@ -76,12 +76,9 @@ for (const area of HOUSE.areas) {
         items,
         lastSeen: now,
         lastObserver: "01",
-      });
+      }, { watch: false });
     }
     await attachSite(area.id, existing.get(site.name)?.key ?? key);
-    // Writing a place marks its last observer as watching it; no phone has seen a
-    // seeded site, so that link would be invented. Real sightings add it back.
-    await cypher(`MATCH (:Observer)-[w:WATCHES]->(p:Place {key: $key}) DELETE w`, { key: existing.get(site.name)?.key ?? key });
     sites++;
   }
 }

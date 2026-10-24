@@ -27,7 +27,10 @@ async function placeRows(query: string, params?: QueryParams) {
   });
 }
 
-async function writePlace(doc: ContainerDoc) {
+/** `watch: false` for writes no camera made (the demo seed): only a real sighting links a phone to a place. */
+type WriteOptions = { watch?: boolean };
+
+async function writePlace(doc: ContainerDoc, { watch = true }: WriteOptions = {}) {
   const saved: ContainerDoc = { ...doc, lastSeen: asDate(doc.lastSeen) };
   await cypher(
     `MERGE (p:Place {key: $key})
@@ -40,10 +43,10 @@ async function writePlace(doc: ContainerDoc) {
       doc: serialize(saved),
     },
   );
-  await syncHolds(saved);
+  await syncHolds(saved, watch);
 }
 
-async function syncHolds(doc: ContainerDoc) {
+async function syncHolds(doc: ContainerDoc, watch: boolean) {
   await cypher(`MATCH (p:Place {key: $key}) OPTIONAL MATCH (p)-[h:HOLDS]->() DELETE h`, { key: doc.key });
   for (const item of doc.items ?? []) {
     await cypher(
@@ -60,7 +63,7 @@ async function syncHolds(doc: ContainerDoc) {
       },
     );
   }
-  if (doc.lastObserver) {
+  if (watch && doc.lastObserver) {
     await cypher(
       `MATCH (p:Place {key: $key})
        MERGE (o:Observer {id: $observerId})
@@ -68,6 +71,11 @@ async function syncHolds(doc: ContainerDoc) {
       { key: doc.key, observerId: doc.lastObserver },
     );
   }
+}
+
+/** Every saved place, with no cap: for maintenance such as the demo reset. */
+export async function listAllPlaceDocs() {
+  return placeRows(`MATCH (p:Place {kind: 'container'}) RETURN p.doc AS doc`);
 }
 
 export async function listPlaceDocs(limit = 100) {
@@ -122,18 +130,18 @@ async function withKeyLock<T>(key: string, task: () => Promise<T>): Promise<T> {
   }
 }
 
-export async function createPlace(doc: ContainerDoc) {
+export async function createPlace(doc: ContainerDoc, options?: WriteOptions) {
   await withKeyLock(doc.key, async () => {
     if (await findPlace(doc.key)) return;
-    await writePlace(doc);
+    await writePlace(doc, options);
   });
 }
 
-export async function patchPlace(key: string, patch: Partial<ContainerDoc>) {
+export async function patchPlace(key: string, patch: Partial<ContainerDoc>, options?: WriteOptions) {
   await withKeyLock(key, async () => {
     const current = await findPlace(key);
     if (!current) return;
-    await writePlace({ ...current, ...patch, key });
+    await writePlace({ ...current, ...patch, key }, options);
   });
 }
 
