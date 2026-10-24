@@ -29,6 +29,7 @@ import type { ObserverId } from "@/lib/types";
 import {
   createPlace,
   findPlace,
+  findPlaceByName,
   findRecentPlace,
   insertEpisode,
   listPlaceDocs,
@@ -297,7 +298,15 @@ async function perceive({
         frames.map((frame) => frame.at),
       );
 
-  const candidates = (await listPlaceDocs(MAX_CANDIDATES)).map((doc) => ({
+  const recent = await listPlaceDocs(MAX_CANDIDATES);
+  // The place the dashboard's anchor match names is always a candidate, however
+  // long ago it was last seen: the cap must not hide the very place in view.
+  const named = anchorName ? normName(anchorName) : null;
+  if (named && !recent.some((doc) => doc.name === named)) {
+    const anchored = await findPlaceByName(named);
+    if (anchored) recent.push(anchored);
+  }
+  const candidates = recent.map((doc) => ({
     ...doc,
     items: withCounts(doc.items),
   }));
