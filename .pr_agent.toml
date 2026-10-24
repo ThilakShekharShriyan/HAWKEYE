@@ -1,0 +1,5 @@
+[pr_reviewer]
+extra_instructions = """
+This repo is a FalkorDB graph app. Check Cypher for FalkorDB compatibility (no EXISTS { } subqueries),
+always use query parameters instead of string interpolation, and flag changes without tests.
+"""
