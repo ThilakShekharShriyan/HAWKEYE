@@ -51,16 +51,33 @@ export function HouseGraph3D() {
   const [data, setData] = useState<HouseGraph | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  const [sceneError, setSceneError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
-  // Load the graph, then keep it fresh so camera updates show up.
+  // Load the graph, then keep it fresh so camera updates show up. One request
+  // at a time (a slow reply is never overtaken by a newer one), sent with the
+  // last ETag so an unchanged house costs a 304, and paused while the tab is hidden.
   useEffect(() => {
     let stopped = false;
+    let inFlight = false;
+    let started = 0;
+    let applied = 0;
+    let etag = "";
     async function load() {
+      if (inFlight || document.hidden) return;
+      inFlight = true;
+      const mine = ++started;
       try {
-        const response = await fetch("/api/house", { cache: "no-store" });
+        const response = await fetch("/api/house", { cache: "no-store", headers: etag ? { "If-None-Match": etag } : {} });
+        if (response.status === 304) {
+          if (!stopped) setError(null);
+          return;
+        }
         if (!response.ok) throw new Error(`status ${response.status}`);
         const next = (await response.json()) as HouseGraph;
-        if (stopped) return;
+        if (stopped || mine < applied) return;
+        applied = mine;
+        etag = response.headers.get("etag") ?? "";
         const json = JSON.stringify(next);
         if (json !== lastJson.current) {
           lastJson.current = json;
@@ -69,13 +86,18 @@ export function HouseGraph3D() {
         setError(null);
       } catch (cause) {
         if (!stopped) setError(cause instanceof Error ? cause.message : "failed to load");
+      } finally {
+        inFlight = false;
       }
     }
     void load();
     const timer = setInterval(load, POLL_MS);
+    const onVisible = () => void load();
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       stopped = true;
       clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
@@ -85,6 +107,8 @@ export function HouseGraph3D() {
     if (!element) return;
     let cancelled = false;
     let teardown = () => {};
+    setSceneError(null);
+    fitted.current = false;
     (async () => {
       const [{ default: ForceGraph3D }, { default: SpriteText }] = await Promise.all([
         import("3d-force-graph"),
@@ -146,13 +170,16 @@ export function HouseGraph3D() {
         graph.pauseAnimation();
         graph._destructor();
       };
-    })();
+    })().catch((cause) => {
+      // A chunk that fails to load (or WebGL that cannot start) must say so, not leave a blank canvas.
+      if (!cancelled) setSceneError(cause instanceof Error ? cause.message : "the 3D view failed to start");
+    });
     return () => {
       cancelled = true;
       teardown();
       graphRef.current = null;
     };
-  }, []);
+  }, [attempt]);
 
   // Feed new data into the scene. Copies, because the library mutates what it is given.
   useEffect(() => {
@@ -206,6 +233,14 @@ export function HouseGraph3D() {
           Roommates, the areas and sites they share, and what is in them. Drag to orbit, scroll to zoom, click a node.
         </p>
         {error ? <p className="mt-1 text-xs text-red-400">Could not load the graph: {error}</p> : null}
+        {sceneError ? (
+          <p className="pointer-events-auto mt-1 text-xs text-red-400">
+            The 3D view could not start: {sceneError}{" "}
+            <button type="button" className="underline" onClick={() => setAttempt((n) => n + 1)}>
+              Retry
+            </button>
+          </p>
+        ) : null}
         {data && data.nodes.length === 0 ? (
           <p className="mt-1 text-xs text-amber-300">The graph is empty. Run npm run seed:demo.</p>
         ) : null}

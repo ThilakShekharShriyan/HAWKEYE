@@ -78,8 +78,6 @@ export const HOUSE = {
   ],
 };
 
-const EDGE_TYPES = ["LIVES_IN", "ROOMMATE_OF", "HAS_AREA", "HAS_SITE", "HOLDS", "RESPONSIBLE_FOR", "COVERS", "CARRIES"];
-
 /** Creates or refreshes the house structure around the places. Sites are written by the caller. */
 export async function seedHouseStructure() {
   await cypher(`MERGE (h:House {id: $id}) SET h.name = $name`, { id: HOUSE.id, name: HOUSE.name });
@@ -157,20 +155,50 @@ const GROUP: Record<string, HouseGroup> = {
   Observer: "observer",
 };
 
+/** Most camera-made places the view will draw; the house structure itself is small. */
+const MAX_CAMERA_SITES = 100;
+
+const COLUMNS = `labels(a)[0] AS al, a.id AS aid, a.key AS akey, a.name AS aname,
+            type(r) AS rel, r.count AS count,
+            labels(b)[0] AS bl, b.id AS bid, b.key AS bkey, b.name AS bname`;
+
+// Every pattern is rooted at the house (or at a place no area claims), so a
+// poll never walks the rest of the graph. Each binds a, r and b.
+const SCOPED = [
+  `(a:Person)-[r:LIVES_IN]->(b:House {id: $house})`,
+  `(a:House {id: $house})-[r:HAS_AREA]->(b:Area)`,
+  `(:House {id: $house})-[:HAS_AREA]->(a:Area)-[r:HAS_SITE]->(b:Place)`,
+  `(:House {id: $house})-[:HAS_AREA]->(:Area)-[:HAS_SITE]->(a:Place)-[r:HOLDS]->(b:Item)`,
+  `(a:Person)-[r:ROOMMATE_OF]->(b:Person), (a)-[:LIVES_IN]->(:House {id: $house})`,
+  `(a:Person)-[r:RESPONSIBLE_FOR]->(b:Duty), (a)-[:LIVES_IN]->(:House {id: $house})`,
+  `(a:Duty)-[r:COVERS]->(b:Area)<-[:HAS_AREA]-(:House {id: $house})`,
+  `(a:Person)-[r:CARRIES]->(b:Observer), (a)-[:LIVES_IN]->(:House {id: $house})`,
+];
+
 /** The house as nodes and links for the 3D view. */
 export async function readHouseGraph(): Promise<HouseGraph> {
-  const rows = await cypher<Row>(
-    `MATCH (a)-[r]->(b)
-     WHERE type(r) IN $types
-     RETURN labels(a)[0] AS al, a.id AS aid, a.key AS akey, a.name AS aname,
-            type(r) AS rel, r.count AS count,
-            labels(b)[0] AS bl, b.id AS bid, b.key AS bkey, b.name AS bname`,
-    { types: EDGE_TYPES },
-  );
+  const params = { house: HOUSE.id, limit: MAX_CAMERA_SITES };
+  const [structure, cameraSites, cameraHolds] = await Promise.all([
+    Promise.all(SCOPED.map((pattern) => cypher<Row>(`MATCH ${pattern} RETURN ${COLUMNS}`, params))),
+    // Camera-made places no area claims, with or without anything in them.
+    cypher<Row>(
+      `MATCH (p:Place {kind: 'container'}) WHERE NOT ()-[:HAS_SITE]->(p)
+       RETURN p.key AS key, p.name AS name LIMIT $limit`,
+      params,
+    ),
+    cypher<Row>(
+      `MATCH (a:Place {kind: 'container'}) WHERE NOT ()-[:HAS_SITE]->(a)
+       WITH a LIMIT $limit
+       MATCH (a)-[r:HOLDS]->(b:Item)
+       RETURN ${COLUMNS}`,
+      params,
+    ),
+  ]);
+
   const nodes = new Map<string, HouseNode>();
   const links: HouseLink[] = [];
   const seen = new Set<string>();
-  for (const row of rows) {
+  for (const row of [...structure.flat(), ...cameraHolds]) {
     const al = str(row.al);
     const bl = str(row.bl);
     const a = idOf(al, row, "a");
@@ -190,14 +218,15 @@ export async function readHouseGraph(): Promise<HouseGraph> {
       item.count = (item.count ?? 0) + count;
     }
   }
-  // Camera-made places that no area claims yet hang off the house.
+
+  // Camera-made places hang off the house, even when nothing is in them yet.
   const houseId = `house:${HOUSE.id}`;
   if (nodes.has(houseId)) {
-    const claimed = new Set(links.filter((link) => link.type === "HAS_SITE").map((link) => link.target));
-    for (const node of nodes.values()) {
-      if (node.group === "site" && !claimed.has(node.id)) {
-        links.push({ source: houseId, target: node.id, type: "HAS_SITE" });
-      }
+    for (const row of cameraSites) {
+      const site = idOf("Place", { akey: row.key, aname: row.name }, "a");
+      if (!site) continue;
+      if (!nodes.has(site.id)) nodes.set(site.id, { id: site.id, label: site.label, group: "site" });
+      links.push({ source: houseId, target: site.id, type: "HAS_SITE" });
     }
   }
   return { nodes: [...nodes.values()], links };

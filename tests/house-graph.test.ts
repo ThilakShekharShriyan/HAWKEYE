@@ -55,20 +55,23 @@ describe("house graph", () => {
     expect(nodes.find((n) => n.id === "item:egg")?.count).toBe(4);
   });
 
-  it("hangs a camera-made place that no area claims off the house", async () => {
+  it("hangs camera-made places that no area claims off the house, empty or not", async () => {
     const now = new Date();
-    await store.createPlace({
-      key: "container:snack table",
-      kind: "container",
-      name: "snack table",
-      catalogued: true,
-      description: "",
-      items: [],
-      lastSeen: now,
-      lastObserver: "01",
-    });
-    await graph.cypher(`MATCH (p:Place {key: 'container:snack table'}) MERGE (i:Item {name: 'chips'}) MERGE (p)-[:HOLDS {count: 1}]->(i)`);
-    const { links } = await mod.readHouseGraph();
-    expect(links.some((l) => l.type === "HAS_SITE" && l.source === "house:home" && l.target === "site:container:snack table")).toBe(true);
+    // One with nothing in it yet (a partial sighting), one holding something: neither claimed by an area.
+    await store.createPlace({ key: "container:empty shelf", kind: "container", name: "empty shelf", catalogued: false, description: "", items: [], lastSeen: now, lastObserver: "01" });
+    await store.createPlace({ key: "container:snack table", kind: "container", name: "snack table", catalogued: true, description: "", items: [{ name: "chips", count: 1, since: now, by: "01" }], lastSeen: now, lastObserver: "01" });
+    const { nodes, links } = await mod.readHouseGraph();
+    for (const key of ["container:empty shelf", "container:snack table"]) {
+      expect(nodes.some((n) => n.id === `site:${key}` && n.group === "site")).toBe(true);
+      expect(links.some((l) => l.type === "HAS_SITE" && l.source === "house:home" && l.target === `site:${key}`)).toBe(true);
+    }
+    expect(links.some((l) => l.type === "HOLDS" && l.source === "site:container:snack table" && l.target === "item:chips")).toBe(true);
+  });
+
+  it("only reads what belongs to the house: another house's people and areas stay out", async () => {
+    await graph.cypher(`CREATE (h:House {id: 'other', name: 'Other'}), (p:Person {id: 'stranger', name: 'Stranger'}), (a:Area {id: 'attic', name: 'Attic'})
+                        CREATE (p)-[:LIVES_IN]->(h), (h)-[:HAS_AREA]->(a)`);
+    const { nodes } = await mod.readHouseGraph();
+    expect(nodes.some((n) => n.id === "person:stranger" || n.id === "area:attic" || n.id === "house:other")).toBe(false);
   });
 });

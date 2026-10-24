@@ -70,6 +70,8 @@ export type ContainerDoc = {
   lastObserver: ObserverId;
   /** When the newest committed episode was received; an older one finishing later is ignored. */
   observedAt?: Date;
+  /** Set by the demo seed so reseeding can tell its own places from real checkpoints; camera updates keep it. */
+  seed?: "house";
 };
 
 export type EpisodeFrame = {
