@@ -108,6 +108,7 @@ export function CameraFeed({
     videoRef,
     observerId: observer.id,
     place: placeHint,
+    viewer: capture?.viewer,
     // The leader tab sends frames; any other tab with the stream follows its results.
     enabled: ready && (stream ? true : capture === undefined),
     follow: Boolean(stream) && !capture?.leader,

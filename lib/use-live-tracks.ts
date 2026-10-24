@@ -39,6 +39,7 @@ export function useLiveTracks({
   enabled,
   follow = false,
   place,
+  viewer,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
   observerId: ObserverId;
@@ -47,6 +48,8 @@ export function useLiveTracks({
   follow?: boolean;
   /** Which saved place is in view; sent so a change the tracker proves can be recorded there. */
   place?: RefObject<PlaceHint | null>;
+  /** This tab's capture-lease id; the server only writes counts for the lease holder. */
+  viewer?: string;
 }) {
   const [tracks, setTracks] = useState<LiveTracks>(OFF);
 
@@ -116,7 +119,10 @@ export function useLiveTracks({
       if (!blob || stopped) return schedule(SEND_EVERY_MS);
       try {
         const hint = place?.current;
-        const query = hint && Date.now() - hint.at < PLACE_STICKY_MS ? `?place=${encodeURIComponent(hint.name)}` : "";
+        const params = new URLSearchParams();
+        if (hint && Date.now() - hint.at < PLACE_STICKY_MS) params.set("place", hint.name);
+        if (viewer) params.set("viewer", viewer);
+        const query = params.size > 0 ? `?${params}` : "";
         const response = await fetch(`/api/track/live/${observerId}${query}`, {
           method: "POST",
           headers: { "Content-Type": "image/jpeg", "X-Frame-At": String(started) },
@@ -164,7 +170,7 @@ export function useLiveTracks({
       window.clearTimeout(timer);
       setTracks(OFF);
     };
-  }, [enabled, follow, observerId, videoRef, place]);
+  }, [enabled, follow, observerId, videoRef, place, viewer]);
 
   return enabled ? tracks : OFF;
 }

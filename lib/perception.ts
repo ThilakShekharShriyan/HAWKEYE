@@ -61,7 +61,8 @@ export type ContainerDoc = {
   /** Photos used to tell this site apart from similar ones. */
   references?: Reference[];
   /** The most recent change to the contents, for "who took the …" questions. */
-  lastChange?: { summary: string; by: ObserverId; at: Date };
+  /** `items` and `source` let the tracker's fast path tell an episode's change to the same item from its own. */
+  lastChange?: { summary: string; by: ObserverId; at: Date; items?: string[]; source?: "episode" | "tracker" };
   description: string;
   /** Stable sentence that separates this site from another of the same kind. */
   mark?: string;
@@ -612,6 +613,8 @@ async function perceive({
           summary: deltas.map(formatDelta).join(", ") + (takers.length ? `, taken by ${takers.join(" and ")}` : ""),
           by: observerId,
           at: now,
+          items: deltas.map((d) => d.name),
+          source: "episode",
         };
       }
     }

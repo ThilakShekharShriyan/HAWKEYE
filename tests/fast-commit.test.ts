@@ -115,3 +115,28 @@ describe("touches", () => {
     expect(touches(a, [0.59, 0.59, 0.9, 0.9])).toBe(false);
   });
 });
+
+describe("two reaches close together", () => {
+  it("records the second reach even when only the settled frames separate them", () => {
+    const two = [bottleAt(0.4), bottleAt(0.5)];
+    const one = [bottleAt(0.4)];
+    const touching = (bottles: TrackedObject[]) => [...bottles, hand(0.42)];
+    const seq = [
+      ...frames(7, two),
+      ...frames(3, touching(two), 7),
+      ...frames(2, one, 10), // the settled frames that end reach one and seed the next baseline
+      ...frames(3, touching(one), 12),
+      ...frames(2, [], 15),
+    ];
+    const deltas = run(seq);
+    expect(deltas).toHaveLength(2);
+    expect(deltas[0]).toMatchObject({ label: "bottle", before: 2, after: 1 });
+    expect(deltas[1]).toMatchObject({ label: "bottle", before: 1, after: 0 });
+  });
+
+  it("still ignores a first reach with too few calm frames before it", () => {
+    const two = [bottleAt(0.4), bottleAt(0.5)];
+    const seq = [...frames(2, two), ...frames(3, [...two, hand(0.42)], 2), ...frames(2, [bottleAt(0.4)], 5)];
+    expect(run(seq)).toEqual([]);
+  });
+});

@@ -59,6 +59,8 @@ export class FastCommit {
   private interaction: LiveFrame[] = [];
   private absent: LiveFrame[] = [];
   private startedAt = 0;
+  /** True once a reach has ended, so the calm frames after it came from a settled window. */
+  private seeded = false;
 
   /** Feed one frame; returns the changes this frame proves, usually none. */
   push(frame: LiveFrame): Delta[] {
@@ -96,7 +98,10 @@ export class FastCommit {
   private decide(): Delta[] {
     const baseline = this.baseline ?? [];
     const people = this.interaction.filter(hasPerson).length;
-    if (people < MIN_PERSON_FRAMES || baseline.length < BASELINE_AGREE) return [];
+    // A baseline built from the window that just ended a reach is short when
+    // another reach follows soon: it counts if every one of its frames agrees.
+    const need = this.seeded ? Math.min(BASELINE_AGREE, Math.max(ABSENT_FRAMES, baseline.length)) : BASELINE_AGREE;
+    if (people < MIN_PERSON_FRAMES || baseline.length < need) return [];
 
     const labels = new Set(
       [...baseline, ...this.interaction, ...this.absent].flatMap((frame) =>
@@ -108,7 +113,7 @@ export class FastCommit {
       const before = mode(baseline.map((frame) => countOf(frame, label)));
       const after = mode(this.absent.map((frame) => countOf(frame, label)));
       // Both windows must be steady, and the count must have changed.
-      if (before.frames < BASELINE_AGREE || after.frames < this.absent.length) continue;
+      if (before.frames < need || after.frames < this.absent.length) continue;
       if (before.value === after.value) continue;
       // Only things the hand touched: a camera pan that drops a bottle out of
       // frame changes the count but touched nothing.
@@ -128,6 +133,7 @@ export class FastCommit {
   private reset() {
     // The scene after the hand left is the start of the next baseline.
     this.calm = this.absent.slice(-BASELINE_FRAMES);
+    this.seeded = true;
     this.baseline = null;
     this.interaction = [];
     this.absent = [];
