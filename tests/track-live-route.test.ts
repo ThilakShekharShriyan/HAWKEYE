@@ -4,7 +4,10 @@ import type { LiveFrame } from "../lib/tracker";
 type Obj = { id: number; label: string; confidence: number; box: [number, number, number, number]; trail: [number, number][] };
 const queue: Obj[][] = [];
 
-const trackLive = vi.fn(async (..._args: unknown[]): Promise<LiveFrame> => ({ seq: 1, at: 0, ms: 1, objects: queue.shift() ?? [] }));
+const trackLive = vi.fn(async (...args: unknown[]): Promise<LiveFrame> => {
+  void args;
+  return { seq: 1, at: 0, ms: 1, objects: queue.shift() ?? [] };
+});
 vi.mock("../lib/tracker", () => ({ liveEnabled: () => true, trackLive: (...args: unknown[]) => trackLive(...args) }));
 const privacy = { on: false };
 vi.mock("../lib/world-store", () => ({ privacyActive: async () => privacy.on }));
